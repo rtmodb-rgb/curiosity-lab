@@ -1,0 +1,22 @@
+# Curiosity Lab #3 — the hat (the first aperiodic monotile).
+# Reproduce the verification gate and the figures.
+#
+# The core verification gate
+#     python3 verify.py        -> "RESULT: 27 core checks passed ... VERIFICATION PASSED."
+# needs only numpy + sympy. The 27 core checks are exact-integer / symbolic and
+# are the advertised headline count.
+numpy
+sympy
+#
+# The figures
+#     python3 figures.py
+# additionally need:
+matplotlib
+Pillow
+#
+# OPTIONAL — enables 6 extra independent floating-point geometry cross-checks in
+# verify.py (overlap area, holes, union area via shapely). The 27 core checks do
+# NOT depend on it; without shapely, verify.py prints "shapely not installed ->
+# optional cross-checks skipped" and still passes. With it, the gate reports
+# "27 core checks passed (+ 6 optional shapely cross-checks = 33 total)".
+shapely

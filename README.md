@@ -29,6 +29,7 @@ and from a tiny, readable code repo.
 |---|-------|------|--------|
 | 01 | **The Abelian Sandpile** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/sandpile/) | ✅ shipped & verified |
 | 02 | **Rule 30: Is it random?** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/rule30/) | ✅ shipped & verified |
+| 03 | **The Hat: one shape that never repeats** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/monotile/) | ✅ shipped & verified |
 
 ### #01 — The Abelian Sandpile
 One kindergarten rule about falling sand hides an algebraic group, a fractal "zero," and a number you can
@@ -46,6 +47,17 @@ next to the open question about Rule 30's centre column (does it ever become per
 exactly ½?). You can run all 256 elementary rules live in the browser. Every statistic we compute (density,
 2-bit block frequencies, run lengths, Shannon entropy) is reproduced two independent ways — and we are
 careful to say what those numbers do **not** prove: *looking* random is not the same as *being* random.
+
+### #03 — The Hat: one shape that never repeats
+In 2023, Smith, Myers, Kaplan & Goodman-Strauss found the first **aperiodic monotile** — a single 13-sided
+"hat" that tiles the whole plane but admits **no** periodic tiling, settling the 60-year-old *einstein*
+problem. The page builds the tiling by the **H/T/P/F metatile substitution**, lets you grow it level by
+level in the browser, and colours it by orientation, by reflection, and by metatile. We reproduce every
+headline number two independent ways: the substitution matrix's characteristic polynomial
+`(λ−1)(λ+1)(λ²−7λ+1)`, its leading eigenvalue = the area-inflation factor **φ⁴ = (7+3√5)/2 ≈ 6.854**, the
+limiting tile frequencies (which sum to 1), and the unreflected:reflected hat ratio → φ⁴. The browser code
+is a byte-for-byte copy of the Python core (a Node test enforces it), and the page is explicit that
+aperiodicity itself is **cited, not re-proved** — we check the arithmetic around it, not the topology proof.
 
 ## Reproduce every number yourself
 
@@ -68,6 +80,18 @@ python3 code/rule30/verify.py          # needs numpy
 
 # Run the EXACT ECA JavaScript shipped on the Rule 30 page, in Node, vs. Python
 node code/rule30/test_shipped_js.mjs
+
+# --- Lab #03 — the aperiodic monotile ("the hat") ---
+# Python checks: substitution-matrix charpoly & eigenvalues, area inflation = phi^4,
+# limiting tile frequencies sum to 1, H-seed totals = squared Fibonacci, etc.
+# Core needs only numpy + sympy and prints "27 core checks passed"; an OPTIONAL
+# shapely cross-check (exact geometry: no overlaps/gaps) adds 6 more if installed.
+pip install -r code/monotile/requirements.txt   # numpy, sympy (+ optional shapely, matplotlib, Pillow)
+python3 code/monotile/verify.py
+
+# Run the EXACT JavaScript core shipped on the page, in Node, and prove it is
+# byte-for-byte identical to the Python core and produces identical tilings
+node code/monotile/test_core.mjs
 ```
 
 Exact sandpile-group orders for the n×n grid (= number of spanning trees = det of the reduced Laplacian),
@@ -92,6 +116,8 @@ docs/                      # the live site (GitHub Pages serves from here)
   sandpile/img/            #   computed hero figures
   rule30/index.html        #   experiment #02
   rule30/img/              #   computed hero figures
+  monotile/index.html      #   experiment #03
+  monotile/img/            #   computed hero figures
 code/sandpile/
   sandpile.py              # core model: stabilise, identity, recurrent test, exact determinant
   verify.py                # one-command reproduction of every headline claim
@@ -104,6 +130,16 @@ code/rule30/
   figures.py               # regenerates the hero images
   test_shipped_js.mjs      # runs the page's own ECA JS under Node
   facts.md                 # sourced facts, caveats and references
+code/monotile/
+  hat.py                   # the hat polygon + H/T/P/F metatiles (port of Kaplan's hatviz)
+  substitution.py          # the substitution rule: inflate a patch one level
+  core.js                  # dependency-free JS core (byte-identical to the page's inlined copy)
+  verify.py                # 27 core checks (numpy+sympy) + optional shapely geometry cross-check
+  figures.py               # regenerates the hero images
+  test_core.mjs            # runs the page's own JS core under Node, vs. Python
+  requirements.txt         # numpy, sympy (core) + optional shapely/matplotlib/Pillow
+  facts.md                 # sourced facts, caveats and references
+  LICENSE-hatviz.txt       # upstream BSD-3-Clause notice for the ported hatviz code
 ```
 
 ## Why a "determinant = number of spanning trees"?
