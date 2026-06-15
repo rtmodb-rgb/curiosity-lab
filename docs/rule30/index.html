@@ -718,7 +718,7 @@ rule's output for code c = bit c of the rule number   ( (rule &gt;&gt; c) &amp; 
       simulated Rule 90 triangle against Lucas' submask test, row by row.</span></p>
       <p class="cl-hint">The check simulates Rule 90 for 128 rows, independently computes
       <code class="cl-code">(k &amp; ~t) === 0</code> for every entry, and asserts they match — the same
-      test <code class="cl-code">verify.py</code> runs to 512 rows.</p>
+      test <code class="cl-code">verify.py</code> runs over 513 rows (t = 0…512).</p>
     </div>
   </div>
 </div>
@@ -758,7 +758,7 @@ rule's output for code c = bit c of the rule number   ( (rule &gt;&gt; c) &amp; 
       <canvas class="cl-plot" id="ccPlot" width="720" height="260"
         aria-label="Running density of 1s in the Rule 30 center column versus step, with a reference line at one half."></canvas>
       <p class="cl-hint">Running density of 1s vs. step. The dashed line is exactly ½; the axis is zoomed
-      to [0.40, 0.60] (the sequence starts at 1.0, so the first ~20 steps are off the top). Watch it
+      to [0.40, 0.60] (the sequence starts at 1.0, so the first ~10 steps are off the top). Watch it
       <i>wobble around</i> ½ — at <b>N = 2000</b> it sits at <b>0.4888</b>, slightly <i>below</i> half.</p>
     </div>
   </div>
@@ -805,7 +805,7 @@ rule's output for code c = bit c of the rule number   ( (rule &gt;&gt; c) &amp; 
   <p style="margin:0 0 var(--space-2)">The density is hair-close to ½ and the entropy is essentially
   maximal. That is <b>consistent with</b> randomness — and it is <b>not a proof of anything</b>. They are
   finite-sample, empirical observations. We make <b>no claim that Rule 30 "is random."</b> In fact at
-  N = 2000 the density is <i>0.4888</i>, comfortably below ½ — a reminder that a finite tally wobbles and
+  N = 2000 the density is <i>0.4888</i>, slightly below ½ — a reminder that a finite tally wobbles and
   tells you nothing certain about the infinite limit. Whether that limit is exactly ½, and even whether
   the column ever repeats, are open problems — next.</p>
 </div>
@@ -926,7 +926,8 @@ code/rule30/test_shipped_js.mjs  ← run: node code/rule30/test_shipped_js.mjs
   <li>M. Cook, "Universality in Elementary Cellular Automata," <i>Complex Systems</i> <b>15</b>, 1 (2004)
     — Rule 110 is Turing-complete. <a href="https://www.complex-systems.com/pdf/15-1-1.pdf">PDF</a></li>
   <li>E. Jen, "Global properties of cellular automata," <i>J. Stat. Phys.</i> <b>43</b>, 219 (1986) —
-    Wolfram (2019) attributes the "no two columns both periodic" result to this paper.</li>
+    Wolfram (2019) attributes the "no two columns both periodic" result to this paper; see also E. Jen,
+    "Aperiodicity in one-dimensional cellular automata," <i>Physica D</i> <b>45</b>, 3 (1990).</li>
   <li>G. Cattaneo, M. Finelli, L. Margara, "Investigating topological chaos…," <i>Theoret. Comput. Sci.</i>
     <b>244</b>, 219 (2000). <a href="https://doi.org/10.1016/S0304-3975(98)00345-4">doi:10.1016/S0304-3975(98)00345-4</a></li>
   <li>É. Lucas, "Théorie des Fonctions Numériques Simplement Périodiques," <i>Amer. J. Math.</i> <b>1</b>
