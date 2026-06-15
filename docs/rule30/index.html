@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rule 30 — Is it random? · Curiosity Lab #2</title>
+<meta name="description" content="An interactive, verified explorable on Rule 30 and elementary cellular automata: a rule we can prove (Rule 90 = Pascal mod 2) next to an open $30,000 question (Rule 30's center column). Every number reproduced by code.">
+<style>
+/* ============================================================================
+   Curiosity Lab — design tokens
+   Single source of truth for color, type, spacing, radius, shadow, motion.
+   Self-contained: no @import, no remote fonts, no build step.
+
+   Themes
+   ------
+   • Default (:root)                  → LIGHT  (warm paper)
+   • @media (prefers-color-scheme:dark) → DARK  (the established brand)
+   • Authors may PIN a theme with  <html data-theme="dark">  or  "light".
+     The data-theme rules win over the media query.
+
+   The dark values are the exact brand palette from Lab #1 (sandpile) — this is
+   an evolution, not a repaint. Light is a new, contrast-checked companion.
+   All text tokens meet WCAG AA (≥4.5:1) on their intended surfaces; most clear
+   AAA. The raw amber --c-amber is a NON-TEXT accent (fills, borders, dataviz);
+   use --c-link / --c-accent-ink for text on light.
+   ============================================================================ */
+
+:root{
+  color-scheme: light dark;
+
+  /* ---- Type families (system stacks — zero network) ---------------------- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+               "Liberation Mono", monospace;
+
+  /* ---- Fluid type scale (16px base; headings clamp for mobile-first) ----- */
+  --text-2xs: .6875rem;   /* 11px — micro labels      */
+  --text-xs:  .75rem;     /* 12px — kicker, tags      */
+  --text-sm:  .8125rem;   /* 13px — hints, captions   */
+  --text-md:  .875rem;    /* 14px — controls, footer  */
+  --text-base:1rem;       /* 16px — body              */
+  --text-lg:  1.125rem;   /* 18px — lead / subtitle   */
+  --text-xl:  clamp(1.25rem, 1.05rem + 1vw, 1.625rem);  /* h2  ~20→26 */
+  --text-2xl: clamp(1.875rem, 1.3rem + 2.6vw, 3.25rem); /* h1  ~30→52 */
+
+  --leading-tight: 1.12;
+  --leading-snug:  1.3;
+  --leading-body:  1.65;   /* readable measure rhythm */
+
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-bold:   700;
+  --weight-black:  800;
+
+  --tracking-kicker: .22em;
+  --tracking-tight: -.01em;
+
+  --measure: 65ch;         /* readable line length cap */
+
+  /* ---- Spacing rhythm (4px base grid) ------------------------------------ */
+  --space-0: 0;
+  --space-1: .25rem;   /* 4  */
+  --space-2: .5rem;    /* 8  */
+  --space-3: .75rem;   /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.25rem;  /* 20 */
+  --space-6: 1.5rem;   /* 24 */
+  --space-8: 2rem;     /* 32 */
+  --space-10: 2.75rem; /* 44 */
+  --space-12: 3.5rem;  /* 56 */
+  --space-16: 4.5rem;  /* 72 */
+
+  --container: 880px;  /* page max-width (matches umbrella landing) */
+  --container-narrow: 720px;
+
+  /* ---- Radius ------------------------------------------------------------ */
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Control geometry -------------------------------------------------- */
+  --control-h: 2.5rem;     /* 40px — comfortable tap target */
+  --tap-min: 44px;         /* WCAG 2.5.5 target floor       */
+  --border: 1px;
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(.2,.6,.3,1);
+  --dur-fast: .12s;
+  --dur: .18s;
+  --dur-slow: .32s;
+
+  /* ===================== LIGHT theme (default) ===================== */
+  /* surfaces */
+  --c-bg:        #f7f4ee;   /* warm paper                     */
+  --c-bg-grad-a: #fbf6ea;   /* subtle radial wash (optional)  */
+  --c-bg-grad-b: #f1eee6;
+  --c-surface:   #ffffff;   /* raised card / panel            */
+  --c-surface-2: #f1ece1;   /* recessed / segmented controls  */
+  --c-inset:     #f3eee2;   /* code / eq / table heads        */
+  --c-line:      #e2dccc;   /* hairline borders               */
+  --c-line-strong:#d3ccba;
+
+  /* text */
+  --c-ink:    #19202f;      /* headings / strong  14.8:1      */
+  --c-body:   #2b3344;      /* body copy          11.5:1      */
+  --c-dim:    #586274;      /* secondary / hints   5.6:1      */
+  --c-on-accent:#2b1c08;    /* text on amber fill  7.8:1      */
+
+  /* brand accents */
+  --c-amber:     #f0a249;   /* NON-TEXT: fills, borders, dataviz */
+  --c-amber-soft:#f7d8a8;
+  --c-link:      #9a5410;   /* links / accent text 5.2:1      */
+  --c-link-hover:#7d420a;
+  --c-teal:      #2d7a98;   /* NON-TEXT accent / borders      */
+  --c-teal-ink:  #1d5d73;   /* teal text          6.7:1       */
+  --c-cream:     #8a5a10;   /* "cream" role → warm strong text on light */
+
+  /* state */
+  --c-ok:      #1c7a52;     /* 4.8:1  */
+  --c-warn-ink:#8a5a10;     /* caveat text/heading 5.4:1 */
+  --c-warn-edge:#d9a441;    /* caveat left border / accent */
+  --c-warn-bg: #fbf2dd;     /* caveat fill */
+  --c-info-edge:#2d7a98;    /* note left border */
+  --c-info-bg: #ecf3f6;     /* note fill */
+  --c-hot:     #c0392b;     /* alert / "bad" text 4.9:1 */
+
+  /* code on inset */
+  --c-code-ink:#8a3d00;
+
+  /* focus + selection */
+  --c-focus:   #1d5d73;     /* visible focus ring */
+  --c-focus-halo: rgba(29,93,115,.28);
+  --c-select-bg: #f7d8a8;
+  --c-select-fg: #19202f;
+
+  /* shadows (soft on paper) */
+  --shadow-sm: 0 1px 2px rgba(25,32,47,.06);
+  --shadow-md: 0 4px 14px rgba(25,32,47,.08);
+  --shadow-lg: 0 12px 32px rgba(25,32,47,.12);
+
+  /* dataviz ramp (sand heights 0..3 + hot) — identical hues both themes */
+  --viz-0: #c9d2e4;  /* low (light needs a visible "empty") */
+  --viz-1: #2d7a98;
+  --viz-2: #f0a249;
+  --viz-3: #b9892f;  /* "cream" reads as bright on dark; darken for light */
+  --viz-hot:#ff785a;
+  --viz-axis: #b6ad99;
+  --viz-line: #9a5410;
+}
+
+/* ===================== DARK theme — the established brand ===================== */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-bg:        #0e1320;
+    --c-bg-grad-a: #16223b;
+    --c-bg-grad-b: #1a1c33;
+    --c-surface:   #161d2e;
+    --c-surface-2: #1d2638;
+    --c-inset:     #0c1220;
+    --c-line:      #2a3550;
+    --c-line-strong:#3a4a6e;
+
+    --c-ink:    #e8ecf5;   /* 15.7:1 */
+    --c-body:   #dbe2f0;   /* 14.3:1 */
+    --c-dim:    #9aa6bd;   /*  7.6:1 */
+    --c-on-accent:#1a1205; /*  8.8:1 on amber */
+
+    --c-amber:     #f0a249;
+    --c-amber-soft:#5a3d1a;
+    --c-link:      #f0a249; /* 8.8:1 on bg */
+    --c-link-hover:#ffc07a;
+    --c-teal:      #2d7a98;
+    --c-teal-ink:  #6fb6d0; /* lighter teal reads as text on dark */
+    --c-cream:     #faf1d9; /* 16.5:1 */
+
+    --c-ok:      #5fd0a0;   /* 9.7:1 */
+    --c-warn-ink:#ffd166;   /* 12.9:1 */
+    --c-warn-edge:#ffd166;
+    --c-warn-bg: #2a1d12;
+    --c-info-edge:#2d7a98;
+    --c-info-bg: #15233a;
+    --c-hot:     #ff785a;   /* 7.1:1 */
+
+    --c-code-ink:#ffd9a8;
+
+    --c-focus:   #ffc985;
+    --c-focus-halo: rgba(240,162,73,.35);
+    --c-select-bg: #2d7a98;
+    --c-select-fg: #ffffff;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+    --shadow-lg: 0 14px 38px rgba(0,0,0,.55);
+
+    --viz-0: #1a213a;
+    --viz-1: #2d7a98;
+    --viz-2: #f0a249;
+    --viz-3: #faf1d9;
+    --viz-hot:#ff785a;
+    --viz-axis: #2a3550;
+    --viz-line: #f0a249;
+  }
+}
+
+/* ===================== Author-pinned themes ===================== */
+/* <html data-theme="dark"> forces dark regardless of OS preference. */
+:root[data-theme="dark"]{
+  --c-bg:#0e1320; --c-bg-grad-a:#16223b; --c-bg-grad-b:#1a1c33;
+  --c-surface:#161d2e; --c-surface-2:#1d2638; --c-inset:#0c1220;
+  --c-line:#2a3550; --c-line-strong:#3a4a6e;
+  --c-ink:#e8ecf5; --c-body:#dbe2f0; --c-dim:#9aa6bd; --c-on-accent:#1a1205;
+  --c-amber:#f0a249; --c-amber-soft:#5a3d1a; --c-link:#f0a249; --c-link-hover:#ffc07a;
+  --c-teal:#2d7a98; --c-teal-ink:#6fb6d0; --c-cream:#faf1d9;
+  --c-ok:#5fd0a0; --c-warn-ink:#ffd166; --c-warn-edge:#ffd166; --c-warn-bg:#2a1d12;
+  --c-info-edge:#2d7a98; --c-info-bg:#15233a; --c-hot:#ff785a; --c-code-ink:#ffd9a8;
+  --c-focus:#ffc985; --c-focus-halo:rgba(240,162,73,.35);
+  --c-select-bg:#2d7a98; --c-select-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 8px 24px rgba(0,0,0,.45);
+  --shadow-lg:0 14px 38px rgba(0,0,0,.55);
+  --viz-0:#1a213a; --viz-1:#2d7a98; --viz-2:#f0a249; --viz-3:#faf1d9;
+  --viz-hot:#ff785a; --viz-axis:#2a3550; --viz-line:#f0a249;
+}
+/* data-theme="light" simply keeps the :root defaults; declared for symmetry. */
+:root[data-theme="light"]{ color-scheme: light; }
+:root[data-theme="dark"]{ color-scheme: dark; }
+/* ============================================================================
+   Curiosity Lab — component layer
+   Requires tokens.css (loaded first). Self-contained: no external assets.
+   All components are namespaced `cl-` so this file is droppable into any
+   explorable without clobbering page-specific styles.
+
+   Load order:
+     <link rel="stylesheet" href="tokens.css">
+     <link rel="stylesheet" href="components.css">
+   ============================================================================ */
+
+/* ------------------------------------------------------------------ reset-lite */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+::selection{ background:var(--c-select-bg); color:var(--c-select-fg); }
+
+/* ------------------------------------------------------------------- page shell */
+.cl-body{
+  margin:0;
+  background:var(--c-bg);
+  color:var(--c-body);
+  font-family:var(--font-sans);
+  font-size:var(--text-base);
+  line-height:var(--leading-body);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+/* optional ambient wash — calm, never busy. Drop class `cl-body--wash`. */
+.cl-body--wash{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, var(--c-bg-grad-a) 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, var(--c-bg-grad-b) 0%, transparent 55%),
+    var(--c-bg);
+  background-attachment:fixed;
+}
+.cl-wrap{ max-width:var(--container); margin:0 auto; padding:0 var(--space-5) var(--space-16); }
+.cl-wrap--narrow{ max-width:var(--container-narrow); }
+
+/* ----------------------------------------------------------------------- links */
+.cl-body a,a.cl-link{ color:var(--c-link); text-decoration:none;
+  text-underline-offset:.14em; text-decoration-thickness:from-font; }
+.cl-body a:hover,a.cl-link:hover{ color:var(--c-link-hover); text-decoration:underline; }
+
+/* ------------------------------------------------------------- focus (global) */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--c-focus);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+/* mouse users don't get the ring; keyboard users always do */
+
+/* --------------------------------------------------------------- typography */
+.cl-kicker{
+  display:inline-block;
+  letter-spacing:var(--tracking-kicker); text-transform:uppercase;
+  font-size:var(--text-xs); font-weight:var(--weight-bold); color:var(--c-link);
+}
+.cl-title{ font-size:var(--text-2xl); line-height:var(--leading-tight);
+  letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:.18em 0 .14em; font-weight:var(--weight-black); }
+.cl-subtitle{ color:var(--c-dim); font-size:var(--text-lg); max-width:var(--measure); margin:0; }
+.cl-h2{ font-size:var(--text-xl); letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:var(--space-12) 0 var(--space-2); font-weight:var(--weight-bold); }
+.cl-h3{ font-size:var(--text-lg); color:var(--c-cream); margin:var(--space-6) 0 var(--space-1);
+  font-weight:var(--weight-bold); }
+.cl-h2 .cl-section-num{ color:var(--c-link); font-variant-numeric:tabular-nums; margin-right:.4em; }
+.cl-lead{ font-size:var(--text-lg); color:var(--c-body); }
+.cl-prose{ max-width:var(--measure); }
+.cl-prose p{ margin:var(--space-3) 0; color:var(--c-body); }
+
+/* ----------------------------------------------------------------- header/footer */
+.cl-header{ padding:var(--space-16) 0 var(--space-6); }
+.cl-header--ruled{ border-bottom:var(--border) solid var(--c-line); margin-bottom:var(--space-2); }
+.cl-footer{ margin-top:var(--space-16); border-top:var(--border) solid var(--c-line);
+  padding-top:var(--space-5); color:var(--c-dim); font-size:var(--text-md); }
+.cl-footer b{ color:var(--c-ink); }
+
+/* --------------------------------------------------------------------- pills */
+.cl-pill{ display:inline-block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-pill); padding:3px 11px; font-size:var(--text-xs);
+  color:var(--c-dim); margin:0 6px 6px 0; }
+.cl-pill b{ color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* ----------------------------------------------------------- tags (status) */
+.cl-tag{ font-size:var(--text-2xs); letter-spacing:.12em; text-transform:uppercase;
+  font-weight:var(--weight-bold); border-radius:var(--radius-pill); padding:3px 9px;
+  border:var(--border) solid var(--c-line); color:var(--c-dim); }
+.cl-tag--live{ color:var(--c-ok); border-color:color-mix(in srgb,var(--c-ok) 45%,transparent);
+  background:color-mix(in srgb,var(--c-ok) 12%,transparent); }
+.cl-tag--soon{ color:var(--c-dim); }
+
+/* ----------------------------------------------------------------- panels */
+.cl-panel{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-5); margin:var(--space-5) 0;
+  box-shadow:var(--shadow-sm); }
+
+/* ---------------------------------------------------------------- cards (index) */
+.cl-card-grid{ display:grid; grid-template-columns:1fr; gap:var(--space-5); margin:var(--space-5) 0; }
+.cl-card{ display:block; background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-xl); overflow:hidden; color:inherit; box-shadow:var(--shadow-sm);
+  transition:transform var(--dur) var(--ease), border-color var(--dur) var(--ease),
+             box-shadow var(--dur) var(--ease); }
+.cl-card__strip{ height:8px;
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber),var(--c-amber-soft)); }
+.cl-card__body{ padding:var(--space-5) var(--space-6); }
+.cl-card__row{ display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-1); }
+.cl-card__no{ font-variant-numeric:tabular-nums; color:var(--c-link);
+  font-weight:var(--weight-black); font-size:var(--text-md); letter-spacing:.08em; }
+.cl-card__title{ margin:2px 0 6px; font-size:var(--text-xl); letter-spacing:var(--tracking-tight);
+  color:var(--c-ink); font-weight:var(--weight-bold); }
+.cl-card p{ margin:0; color:var(--c-dim); font-size:var(--text-md); }
+.cl-card__cta{ margin-top:var(--space-3); color:var(--c-link); font-weight:var(--weight-bold);
+  font-size:var(--text-md); }
+a.cl-card:hover{ border-color:var(--c-amber); transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.cl-card--soon{ opacity:.72; }
+.cl-card--soon:hover{ border-color:var(--c-line); transform:none; box-shadow:var(--shadow-sm); }
+
+/* --------------------------------------------------- "house rules" mini-grid */
+.cl-rules{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin:var(--space-5) 0; }
+.cl-rule{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-4); }
+.cl-rule h3{ margin:0 0 4px; font-size:var(--text-md); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-rule p{ margin:0; font-size:var(--text-md); color:var(--c-dim); }
+@media(max-width:620px){ .cl-rules{ grid-template-columns:1fr; } }
+
+/* ===================================================================== CALLOUTS
+   Two semantic boxes that carry the Lab's honesty contract.
+   .cl-note    — neutral aside / context (teal).
+   .cl-caveat  — uncertainty / "what we did NOT verify" (amber). NEVER hide it.
+   Visual polish must never bury a caveat: it gets its own strong edge + label.
+   =========================================================================== */
+.cl-note{ background:var(--c-info-bg); border:var(--border) solid var(--c-info-edge);
+  border-left:3px solid var(--c-info-edge); border-radius:var(--radius-md);
+  padding:var(--space-3) var(--space-4); margin:var(--space-4) 0; color:var(--c-body); }
+
+.cl-caveat{ background:var(--c-warn-bg); border:var(--border) solid var(--c-warn-edge);
+  border-left:4px solid var(--c-warn-edge); border-radius:var(--radius-md);
+  padding:var(--space-4); margin:var(--space-5) 0; color:var(--c-body); }
+.cl-caveat > b:first-child,.cl-caveat .cl-caveat__label{ color:var(--c-warn-ink); }
+.cl-caveat__label{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  color:var(--c-warn-ink); margin:0 0 var(--space-1); }
+/* a small ⚠ glyph rendered from CSS so no icon font is needed */
+.cl-caveat__label::before{ content:"⚠"; font-size:1.05em; line-height:1; }
+.cl-caveat ul{ margin:var(--space-2) 0 0; padding-left:1.25em; }
+.cl-caveat li{ margin:.3em 0; }
+
+/* ===================================================================== CONTROLS */
+.cl-controls{ display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; margin:var(--space-2) 0 var(--space-1); }
+
+.cl-btn{ background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:0 var(--space-3); min-height:var(--control-h);
+  font:var(--weight-medium) var(--text-md)/1 var(--font-sans); cursor:pointer;
+  display:inline-flex; align-items:center; gap:.4em;
+  transition:border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+             background var(--dur-fast) var(--ease); }
+.cl-btn:hover{ border-color:var(--c-amber); color:var(--c-ink); }
+.cl-btn.is-on,.cl-btn[aria-pressed="true"]{ background:var(--c-amber); color:var(--c-on-accent);
+  border-color:var(--c-amber); }
+.cl-btn:disabled,.cl-btn[aria-disabled="true"]{ opacity:.45; cursor:not-allowed; }
+
+/* segmented control */
+.cl-seg{ display:inline-flex; border:var(--border) solid var(--c-line); border-radius:var(--radius-md);
+  overflow:hidden; }
+.cl-seg .cl-btn{ border:none; border-radius:0; border-right:var(--border) solid var(--c-line); }
+.cl-seg .cl-btn:last-child{ border-right:none; }
+
+.cl-hint{ color:var(--c-dim); font-size:var(--text-sm); margin:var(--space-2) 0 0; }
+
+/* slider + label control --------------------------------------------------- */
+.cl-control{ display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; margin:var(--space-2) 0; }
+.cl-control__label{ font-size:var(--text-md); color:var(--c-dim); font-weight:var(--weight-medium);
+  min-width:7ch; }
+.cl-control__value{ font-variant-numeric:tabular-nums; color:var(--c-cream);
+  font-weight:var(--weight-bold); font-size:var(--text-md); min-width:5ch; text-align:right; }
+.cl-range{ -webkit-appearance:none; appearance:none; width:100%; max-width:18rem; height:var(--tap-min);
+  background:transparent; cursor:pointer; }
+/* track */
+.cl-range::-webkit-slider-runnable-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+.cl-range::-moz-range-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+/* thumb */
+.cl-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:20px; height:20px;
+  margin-top:-7px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range::-moz-range-thumb{ width:20px; height:20px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range:focus-visible{ outline:none; }
+.cl-range:focus-visible::-webkit-slider-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+.cl-range:focus-visible::-moz-range-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+
+/* checkbox label inline */
+.cl-check{ display:inline-flex; align-items:center; gap:.5em; color:var(--c-dim);
+  font-size:var(--text-sm); min-height:var(--tap-min); }
+.cl-check input{ accent-color:var(--c-amber); width:1.05em; height:1.05em; }
+
+/* ===================================================================== STAGE */
+.cl-stage{ display:flex; gap:var(--space-5); flex-wrap:wrap; align-items:flex-start; }
+.cl-stage__side{ flex:1; min-width:210px; }
+
+/* stat readout rows */
+.cl-stat{ display:flex; justify-content:space-between; gap:var(--space-3); padding:6px 0;
+  border-bottom:1px dashed var(--c-line); font-size:var(--text-md); }
+.cl-stat b{ font-variant-numeric:tabular-nums; color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* legend (dataviz key) */
+.cl-legend{ display:flex; gap:var(--space-4); flex-wrap:wrap; font-size:var(--text-sm);
+  color:var(--c-dim); margin-top:var(--space-3); }
+.cl-legend i{ display:inline-block; width:13px; height:13px; border-radius:3px; margin-right:5px;
+  vertical-align:-2px; border:1px solid rgba(0,0,0,.18); }
+
+/* canvas surface (pixel sims) */
+.cl-canvas{ display:block; image-rendering:pixelated; background:var(--c-inset);
+  border-radius:var(--radius-md); border:var(--border) solid var(--c-line);
+  max-width:100%; height:auto; touch-action:none; }
+
+/* ===================================================================== FIGURE */
+.cl-figure{ margin:var(--space-5) 0; }
+.cl-figure img{ width:100%; display:block; border-radius:var(--radius-lg);
+  border:var(--border) solid var(--c-line); background:var(--c-inset); }
+.cl-figcaption{ color:var(--c-dim); font-size:var(--text-sm); margin-top:var(--space-2);
+  max-width:var(--measure); }
+.cl-figcaption b{ color:var(--c-body); }
+.cl-two{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); }
+@media(max-width:620px){ .cl-two{ grid-template-columns:1fr; } }
+
+/* ============================================================= MATH / CODE */
+.cl-code,code.cl-code{ font-family:var(--font-mono); font-size:.92em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); padding:.06em .4em; border-radius:5px; color:var(--c-code-ink); }
+.cl-kbd{ font-family:var(--font-mono); font-size:.85em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-bottom-width:2px; padding:.08em .45em;
+  border-radius:5px; color:var(--c-ink); }
+/* display equation / code callout */
+.cl-eq{ display:block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-amber); padding:var(--space-3) var(--space-4);
+  border-radius:var(--radius-md); margin:var(--space-4) 0; overflow-x:auto;
+  color:var(--c-code-ink); font-family:var(--font-mono); font-size:.94rem;
+  line-height:1.55; white-space:pre-wrap; }
+
+/* ===================================================================== TABLE */
+.cl-table{ border-collapse:collapse; width:100%; font-size:var(--text-md); margin:var(--space-3) 0;
+  font-variant-numeric:tabular-nums; }
+.cl-table th,.cl-table td{ border:var(--border) solid var(--c-line); padding:7px 10px; text-align:left; }
+.cl-table th{ background:var(--c-inset); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-table td.num{ text-align:right; font-family:var(--font-mono); }
+
+/* verdict colours for verification rows */
+.cl-ok{ color:var(--c-ok); font-weight:var(--weight-bold); }
+.cl-bad{ color:var(--c-hot); font-weight:var(--weight-bold); }
+
+/* ===================================================== REPRODUCE / DETAILS */
+.cl-details{ margin:var(--space-3) 0; border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:var(--space-1) var(--space-4); background:var(--c-surface); }
+.cl-details summary{ cursor:pointer; color:var(--c-cream); font-weight:var(--weight-bold);
+  padding:var(--space-2) 0; list-style-position:inside; }
+.cl-details[open] summary{ margin-bottom:var(--space-1); }
+
+/* a dedicated "How this was made / reproduce it" block */
+.cl-repro{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-teal); border-radius:var(--radius-md);
+  padding:var(--space-4) var(--space-5); margin:var(--space-5) 0; }
+.cl-repro__title{ display:flex; align-items:center; gap:.5em; color:var(--c-teal-ink);
+  font-weight:var(--weight-bold); margin:0 0 var(--space-2); }
+.cl-repro__title::before{ content:"⚙"; }
+
+/* references list */
+.cl-refs{ font-size:var(--text-sm); color:var(--c-dim); padding-left:1.2em; }
+.cl-refs li{ margin:7px 0; }
+
+/* ===================================================================== MOTION */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
+
+/* --------------------------------------------------------------- utilities */
+.cl-visually-hidden{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.cl-stack > * + *{ margin-top:var(--space-4); }
+.cl-muted{ color:var(--c-dim); }
+.cl-tabnums{ font-variant-numeric:tabular-nums; }
+
+/* ============================================================ page-specific
+   Built on the Curiosity Lab tokens — no new hard-coded hues for text. */
+.r30-lead-fig{ margin-top:var(--space-4); }
+
+/* truth-table / rule-icon editor */
+.tt{ display:flex; gap:8px; flex-wrap:wrap; margin:var(--space-3) 0 var(--space-2); }
+.tt-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.tt-nb{ display:flex; gap:2px; }
+.bit{ width:15px; height:15px; border-radius:3px; border:1px solid var(--c-line-strong);
+  background:var(--c-surface); }
+.bit.on{ background:var(--c-ink); border-color:var(--c-ink); }
+.tt-arrow{ color:var(--c-dim); font-size:11px; line-height:1; }
+.tt-out{ width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:15px; cursor:pointer;
+  border-radius:var(--radius-sm); border:1px solid var(--c-line-strong);
+  background:var(--c-surface-2); color:var(--c-ink);
+  transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.tt-out:hover{ border-color:var(--c-amber); }
+.tt-out.on{ background:var(--c-amber); color:var(--c-on-accent); border-color:var(--c-amber); }
+.tt-code{ font-size:var(--text-2xs); color:var(--c-dim); font-family:var(--font-mono); letter-spacing:.04em; }
+
+.numinput{ width:5em; font-family:var(--font-mono); font-size:var(--text-md); text-align:center;
+  background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-sm); min-height:var(--control-h); }
+.readout{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--c-body);
+  margin:var(--space-3) 0 0; line-height:1.7; }
+.readout .lbl{ color:var(--c-dim); }
+.readout b{ color:var(--c-cream); }
+.rulebin{ letter-spacing:.22em; color:var(--c-code-ink); }
+.boolean{ color:var(--c-code-ink); word-break:break-word; }
+
+/* crisp (non-pixelated) plot canvas for the density chart */
+.cl-plot{ display:block; width:100%; height:auto; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-radius:var(--radius-md); }
+
+/* the live "two engines agree" / "Lucas check" verdict line */
+.verdict{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  font-size:var(--text-md); margin:var(--space-3) 0 0; min-height:1.4em; }
+.verdict .cl-ok::before{ content:"✓ "; }
+.verdict .cl-bad::before{ content:"✗ "; }
+
+.big-stat b{ font-size:var(--text-lg); }
+.prize-list h3{ margin-top:var(--space-4); }
+.prize-list h3:first-child{ margin-top:var(--space-1); }
+.flag-grid{ margin:var(--space-2) 0 0; }
+</style>
+</head>
+<body class="cl-body cl-body--wash">
+<main class="cl-wrap">
+
+<header class="cl-header cl-header--ruled">
+  <div class="cl-kicker">Curiosity Lab · No. 2</div>
+  <h1 class="cl-title">Rule 30: is it random?</h1>
+  <p class="cl-subtitle">One black cell. One tile-sized rule. From it grows a pattern that looks
+  random — random enough that it ran inside Mathematica and now carries a <b>$30,000</b> prize for
+  anyone who can pin down what it really is. This page puts a rule we can <i>prove</i> next to that
+  open question, and lets you re-run every number yourself.</p>
+  <div style="margin-top:14px">
+    <span class="cl-pill"><b>interactive</b> — you drive it</span>
+    <span class="cl-pill"><b>verified</b> — claims reproduced by code</span>
+    <span class="cl-pill"><b>sourced</b> — doubts admitted</span>
+  </div>
+</header>
+
+<!-- ============================ 1. THE RULE ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">1</span>The rule, on a single tile</h2>
+<div class="cl-prose">
+  <p class="cl-lead">Take an infinite row of cells, each black (1) or white (0). To get the next row,
+  look at every cell together with its left and right neighbour — a 3-cell window — and read off a new
+  colour from a fixed lookup table. Do it everywhere at once. Repeat.</p>
+  <p>There are exactly <b>2³ = 8</b> possible 3-cell windows, and a rule assigns an output colour to
+  each. That's <b>2⁸ = 256</b> rules in total — the <i>elementary</i> cellular automata. Stephen Wolfram's
+  numbering is precise and worth getting exactly right:</p>
+  <div class="cl-eq">neighbourhood code  c = 4·left + 2·centre + right     (an integer 0…7)
+rule's output for code c = bit c of the rule number   ( (rule &gt;&gt; c) &amp; 1 )</div>
+  <p>So <b>Rule 30</b> is the number 30 = <code class="cl-code">00011110</code> in binary; its eight
+  output bits, read against the eight windows, give the compact Boolean form
+  <code class="cl-code">new = left XOR (centre OR right)</code>. That's the whole machine. The surprise is
+  what it does.</p>
+</div>
+
+<figure class="cl-figure r30-lead-fig">
+  <img src="img/rule30_evolution.png" width="1602" height="802" loading="lazy"
+    alt="Black-and-white triangular space-time diagram of Rule 30 grown from a single black cell: a regular striped region on the left, dissolving into an irregular, noise-like texture on the right.">
+  <figcaption><b>Rule 30 from one black cell</b>, 400 steps (time runs downward). The left edge stays
+  orderly; the right side dissolves into something that resists every attempt to call it anything but
+  random. The vertical line straight below the seed is the <b>centre column</b> — the star of §4.
+  Rendered at one pixel per cell by <code class="cl-code">code/rule30/figures.py</code>.</figcaption>
+</figure>
+
+<!-- ============================ 2. SIMULATOR ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">2</span>Drive it yourself</h2>
+<div class="cl-prose">
+  <p>Below is a full elementary-CA engine. Pick any rule 0–255 with the slider, or <b>click the output
+  squares</b> in the truth table to rewrite the rule one window at a time — the Wolfram code, binary and
+  Boolean form update live. Try the presets to meet a few famous personalities.</p>
+</div>
+
+<div class="cl-panel">
+  <div class="cl-controls" style="margin-bottom:var(--space-2)">
+    <span class="cl-control__label" style="min-width:auto">Presets:</span>
+    <span class="cl-seg" id="presetSeg" role="group" aria-label="Rule presets">
+      <button class="cl-btn" type="button" data-rule="30">30 · chaos</button>
+      <button class="cl-btn" type="button" data-rule="90">90 · Sierpiński</button>
+      <button class="cl-btn" type="button" data-rule="110">110 · Class IV</button>
+      <button class="cl-btn" type="button" data-rule="184">184 · traffic</button>
+      <button class="cl-btn" type="button" data-rule="60">60</button>
+      <button class="cl-btn" type="button" data-rule="150">150</button>
+    </span>
+  </div>
+
+  <!-- truth-table editor -->
+  <div class="tt" id="ttHost" role="group" aria-label="Rule truth table: click an output to toggle it"></div>
+
+  <div class="cl-control">
+    <label class="cl-control__label" for="ruleRange">Rule</label>
+    <input class="cl-range" id="ruleRange" type="range" min="0" max="255" value="30"
+      aria-describedby="ruleNum" style="max-width:14rem">
+    <input class="numinput" id="ruleNum" type="number" min="0" max="255" value="30"
+      aria-label="Rule number 0 to 255">
+  </div>
+
+  <p class="readout" id="ruleReadout"></p>
+
+  <hr style="border:none;border-top:1px dashed var(--c-line);margin:var(--space-4) 0">
+
+  <div class="cl-controls">
+    <button class="cl-btn" id="btnPlay" type="button" aria-pressed="false">▶ Play</button>
+    <button class="cl-btn" id="btnStep" type="button">Step ▸</button>
+    <button class="cl-btn" id="btnReset" type="button">Reset</button>
+    <span class="cl-seg" id="initSeg" role="group" aria-label="Initial condition">
+      <button class="cl-btn is-on" type="button" data-init="seed" aria-pressed="true">single seed</button>
+      <button class="cl-btn" type="button" data-init="random" aria-pressed="false">random</button>
+    </span>
+  </div>
+  <div class="cl-controls" style="margin-top:var(--space-1)">
+    <div class="cl-control" style="margin:0">
+      <label class="cl-control__label" for="speed">Speed</label>
+      <input class="cl-range" id="speed" type="range" min="2" max="120" value="28"
+        aria-describedby="speedV" style="max-width:11rem">
+      <output class="cl-control__value" id="speedV">28/s</output>
+    </div>
+    <div class="cl-control" style="margin:0">
+      <label class="cl-control__label" for="zoom">Zoom</label>
+      <span class="cl-seg" id="zoomSeg" role="group" aria-label="Cell size">
+        <button class="cl-btn" type="button" data-zoom="coarse">big</button>
+        <button class="cl-btn is-on" type="button" data-zoom="med" aria-pressed="true">med</button>
+        <button class="cl-btn" type="button" data-zoom="fine">fine</button>
+      </span>
+    </div>
+    <div class="cl-control" id="densWrap" style="margin:0;display:none">
+      <label class="cl-control__label" for="dens">Density</label>
+      <input class="cl-range" id="dens" type="range" min="5" max="95" value="50"
+        aria-describedby="densV" style="max-width:9rem">
+      <output class="cl-control__value" id="densV">50%</output>
+    </div>
+  </div>
+
+  <canvas class="cl-canvas" id="simCanvas" width="241" height="145"
+    style="width:100%;max-width:680px;margin-top:var(--space-3)"
+    aria-label="Live space-time diagram of the selected cellular-automaton rule. Time runs downward; new rows appear at the bottom."></canvas>
+  <div class="cl-stat" style="border:none;padding-top:var(--space-2)">
+    <span>Generations computed</span><b id="simSteps">0</b>
+  </div>
+  <p class="cl-hint">Boundary convention: cells beyond the left/right edges are treated as <b>0</b>
+  (quiescent), matching the reference engine <code class="cl-code">eca.py</code>. The view shows the
+  central strip of a slightly wider lattice, so the single-seed cone stays edge-clean for the first few hundred steps
+  shown. (The gallery image below uses <i>wrap-around</i> boundaries instead — noted in its caption.)</p>
+</div>
+
+<figure class="cl-figure">
+  <img src="img/rule_gallery.png" width="1920" height="1056" loading="lazy"
+    alt="Six panels showing rules 30, 90, 110, 184, 60 and 150 evolved from one shared random starting row, each producing a visibly different texture.">
+  <figcaption>The same six rules, each grown from <b>one shared random row</b> (periodic / wrap-around
+  boundary, so the strips tile cleanly). Rule 90's nested triangles, Rule 110's drifting gliders, Rule
+  184's particle-like traffic, Rule 30's noise — four wildly different worlds from one-line rules.
+  Wolfram sorted such behaviour into <a href="https://en.wikipedia.org/wiki/Cellular_automaton#Classification">four classes</a>;
+  Rule 30 is the canonical "Class III / chaotic" example.</figcaption>
+</figure>
+
+<!-- ============================ 3. RULE 90 = PASCAL ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">3</span>The one we can prove: Rule 90 = Pascal mod 2</h2>
+<div class="cl-prose">
+  <p>Before the mystery, a certainty. <b>Rule 90</b> is <code class="cl-code">new = left XOR right</code> —
+  it ignores the centre cell entirely. That single XOR makes it <b>additive</b> (linear over GF(2)), and
+  additivity has an exact consequence. Grown from one black cell, the cell in row <i>t</i>, column
+  <i>k</i> equals the binomial coefficient <code class="cl-code">C(t, k) mod 2</code>. The pattern
+  literally <i>is</i> Pascal's triangle reduced modulo 2 — which is the <b>Sierpiński triangle</b>.</p>
+  <p>And we can say <i>exactly</i> which entries are black, with no simulation at all, via
+  <b>Lucas' theorem</b> (1878). Its mod-2 corollary:</p>
+  <div class="cl-eq">C(t, k) is ODD  ⇔  the 1-bits of k are a submask of the 1-bits of t  ⇔  (k AND NOT t) = 0</div>
+  <p>Two completely independent routes to the same picture: a one-line CA, and a closed-form bit test.
+  They must agree pixel-for-pixel. Check it right here, in your browser:</p>
+</div>
+
+<div class="cl-panel">
+  <div class="cl-stage">
+    <div class="cl-stage__side" style="flex:0 0 auto">
+      <canvas class="cl-canvas" id="r90Canvas" width="255" height="128"
+        style="width:100%;max-width:340px"
+        aria-label="Rule 90 grown from a single black cell, forming the Sierpinski triangle."></canvas>
+    </div>
+    <div class="cl-stage__side">
+      <div class="cl-controls">
+        <button class="cl-btn" id="btnLucas" type="button">Verify: CA vs C(t,k) mod 2</button>
+      </div>
+      <p class="verdict" id="lucasVerdict" aria-live="polite"><span class="cl-muted">Click to compare the
+      simulated Rule 90 triangle against Lucas' submask test, row by row.</span></p>
+      <p class="cl-hint">The check simulates Rule 90 for 128 rows, independently computes
+      <code class="cl-code">(k &amp; ~t) === 0</code> for every entry, and asserts they match — the same
+      test <code class="cl-code">verify.py</code> runs to 512 rows.</p>
+    </div>
+  </div>
+</div>
+
+<figure class="cl-figure">
+  <img src="img/rule90_sierpinski.png" width="1533" height="768" loading="lazy"
+    alt="The Sierpinski triangle: a large black triangle recursively subdivided into smaller triangles, produced by Rule 90 from a single black cell.">
+  <figcaption><b>Rule 90, 255 steps</b> — the odd entries of Pascal's triangle, i.e. the Sierpiński
+  gasket. This one is not a conjecture or a good-looking coincidence: it's a theorem, reproduced two
+  independent ways in <code class="cl-code">verify.py</code> (CA simulation, Lucas' submask) and a third
+  (Python's <code class="cl-code">math.comb</code>) as a spot-check.</figcaption>
+</figure>
+
+<!-- ============================ 4. IS IT RANDOM ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">4</span>Rule 30: is it random?</h2>
+<div class="cl-prose">
+  <p>Now the column directly below the seed — the <b>centre column</b> — read top to bottom as a stream
+  of bits: 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, … (this is
+  <a href="https://oeis.org/A051023">OEIS A051023</a>). Wolfram proposed it as a pseudo-random generator,
+  and Mathematica used Rule 30 for large random integers. Run it live and tally the bits as they come:</p>
+</div>
+
+<div class="cl-panel">
+  <div class="cl-controls">
+    <button class="cl-btn" id="ccPlay" type="button" aria-pressed="false">▶ Run the centre column</button>
+    <button class="cl-btn" id="ccJump" type="button">Jump to N = 2000</button>
+    <button class="cl-btn" id="ccReset" type="button">Reset</button>
+  </div>
+  <div class="cl-stage" style="margin-top:var(--space-3)">
+    <div class="cl-stage__side" style="min-width:240px">
+      <div class="cl-stat big-stat"><span>Steps N</span><b id="ccN">0</b></div>
+      <div class="cl-stat big-stat"><span>1s / 0s</span><b id="ccOnes">1 / 0</b></div>
+      <div class="cl-stat big-stat"><span>density of 1s</span><b id="ccDens">1.000000</b></div>
+      <div class="cl-stat"><span>| density − ½ |</span><b id="ccDelta">0.500000</b></div>
+    </div>
+    <div class="cl-stage__side" style="min-width:260px">
+      <canvas class="cl-plot" id="ccPlot" width="720" height="260"
+        aria-label="Running density of 1s in the Rule 30 center column versus step, with a reference line at one half."></canvas>
+      <p class="cl-hint">Running density of 1s vs. step. The dashed line is exactly ½; the axis is zoomed
+      to [0.40, 0.60] (the sequence starts at 1.0, so the first ~20 steps are off the top). Watch it
+      <i>wobble around</i> ½ — at <b>N = 2000</b> it sits at <b>0.4888</b>, slightly <i>below</i> half.</p>
+    </div>
+  </div>
+  <div class="cl-controls" style="margin-top:var(--space-2)">
+    <button class="cl-btn" id="btnEngines" type="button">Cross-check: two independent engines, N = 2000</button>
+  </div>
+  <p class="verdict" id="enginesVerdict" aria-live="polite"><span class="cl-muted">Runs a numpy-style
+  lattice and a big-integer bitboard <code class="cl-code">new=(R&lt;&lt;1)^(R|(R&gt;&gt;1))</code> in the
+  browser and asserts they produce the identical 2001-bit column.</span></p>
+</div>
+
+<div class="cl-prose">
+  <p>Push it much further than the browser can and the bias stays tiny but never quite vanishes. These
+  are our verified / cited measurements:</p>
+</div>
+<table class="cl-table">
+  <thead>
+    <tr><th>N (steps)</th><th>1s</th><th>0s</th><th>density of 1s</th><th>source</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="num">2 000</td><td class="num">978</td><td class="num">1 023</td><td class="num">0.488756</td><td>this lab (live above)</td></tr>
+    <tr><td class="num">100 000</td><td class="num">50 098</td><td class="num">49 903</td><td class="num">0.500975</td><td>this lab — <code class="cl-code">verify.py</code></td></tr>
+    <tr><td class="num">1 000 000 000</td><td class="num">500 025 038</td><td class="num">499 974 962</td><td class="num">≈ 0.500025</td><td>Wolfram (2019)</td></tr>
+  </tbody>
+</table>
+<p class="cl-hint" style="margin-top:var(--space-2)">The two lab rows include the apex (step&nbsp;0), so they tally N+1 cells; Wolfram's billion-cell row tallies exactly N.</p>
+<div class="cl-prose">
+  <p>At N = 100 000 we also measured: the four 2-bit blocks 00/01/10/11 each ≈ ¼
+  (0.24886, 0.25016, 0.25017, 0.25081); 50 034 runs of equal bits, mean length 1.9987, longest run of
+  0s/1s = 19/21; single-bit Shannon entropy 0.999997 bits/cell; an 8-block entropy rate ≈ 0.999765. Every
+  test we ran here, it sails through.</p>
+</div>
+
+<figure class="cl-figure">
+  <img src="img/rule30_center_column.png" width="1760" height="960" loading="lazy"
+    alt="Left: a thin vertical strip of the first 400 center-column bits. Right: 56,320 consecutive center bits laid out 256 per row, showing no visible pattern — looking like random static.">
+  <figcaption>Left: the first 400 centre bits as a strip. Right: <b>56 320 consecutive centre bits</b>,
+  256 per row — structureless static to the eye and to every statistic we threw at it.
+  <b>But "no pattern we can find" is not "no pattern".</b> That gap is the whole point of §5–6.</figcaption>
+</figure>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">What these numbers do — and do not — show</p>
+  <p style="margin:0 0 var(--space-2)">The density is hair-close to ½ and the entropy is essentially
+  maximal. That is <b>consistent with</b> randomness — and it is <b>not a proof of anything</b>. They are
+  finite-sample, empirical observations. We make <b>no claim that Rule 30 "is random."</b> In fact at
+  N = 2000 the density is <i>0.4888</i>, comfortably below ½ — a reminder that a finite tally wobbles and
+  tells you nothing certain about the infinite limit. Whether that limit is exactly ½, and even whether
+  the column ever repeats, are open problems — next.</p>
+</div>
+
+<!-- ============================ 5. THE PRIZE ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">5</span>The $30,000 question(s)</h2>
+<div class="cl-prose">
+  <p>In October 2019 Stephen Wolfram and the Wolfram Foundation announced the <b>Rule 30 Prizes</b>:
+  <b>$30,000</b>, structured as <b>three separate $10,000 prizes</b>, one for each of three precise
+  questions about that centre column. Quoted verbatim:</p>
+</div>
+<div class="cl-note prize-list">
+  <h3 class="cl-h3">Problem 1: Does the center column always remain non-periodic?</h3>
+  <p style="margin:.2em 0 0">Running it, we know the sequence isn't periodic for the first billion steps.
+  But <i>ever</i>? That needs a proof.</p>
+  <h3 class="cl-h3">Problem 2: Does each color of cell occur on average equally often in the center column?</h3>
+  <p style="margin:.2em 0 0">i.e. does the density of 1s converge to <i>exactly</i> ½ in the limit?</p>
+  <h3 class="cl-h3">Problem 3: Does computing the nth cell of the center column require at least O(n) computational effort?</h3>
+  <p style="margin:.2em 0 0">Or is there a shortcut? Running the rule directly costs O(n²) cell updates to
+  reach the n-th centre bit.</p>
+</div>
+<div class="cl-prose">
+  <p>As of <b>15 June 2026</b>, all three are <b>open</b> — no announced winner. (Precedent: Wolfram's
+  2007 prize on the 2,3 Turing machine <i>was</i> claimed within months, settling the simplest known
+  universal Turing machine — so these prizes can fall.) Sources: Wolfram's
+  <a href="https://writings.stephenwolfram.com/2019/10/announcing-the-rule-30-prizes/">2019 announcement</a>
+  and the official rules at <a href="https://www.rule30prize.org/">rule30prize.org</a>.</p>
+</div>
+
+<!-- ============================ 6. PROVEN vs OPEN ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">6</span>What's proven, what's open</h2>
+<div class="cl-prose">
+  <p>It would be easy to leave you with "Rule 30 is random and nobody knows why." The honest picture is
+  sharper and more interesting — some strong things <i>are</i> proven; the specific questions above are
+  not.</p>
+</div>
+
+<div class="cl-note">
+  <p style="margin:0 0 var(--space-1)"><b>PROVEN</b> (with sources):</p>
+  <ul style="margin:0;padding-left:1.2em">
+    <li><b>Rule 90 = Pascal mod 2</b> (Lucas) — exact; we reproduce it three ways.</li>
+    <li><b>Rule 110 is Turing-complete</b> (Cook, 2004) — note this is Rule <b>110</b>, <i>not</i> Rule 30.</li>
+    <li>Rule 30 is <b>chaotic over the space of all configurations</b> (sensitive dependence, topological
+      mixing, dense periodic points — Cattaneo–Finelli–Margara, 2000). This is about <i>all</i> starting
+      configurations, a different statement from anything about the single-seed centre column.</li>
+    <li><b>No two columns</b> of the single-seed Rule 30 pattern are <i>both</i> periodic (Jen, 1986),
+      via a "run the rule sideways" reconstruction argument.</li>
+    <li>Read at 45°, the diagonals are eventually periodic.</li>
+  </ul>
+</div>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">OPEN (do not let anyone tell you otherwise)</p>
+  <ul style="margin:0">
+    <li>Whether the <b>single centre column</b> is eventually periodic. Jen's two-column theorem
+      <i>does not extend</i> to one column in isolation — "there's no known way." Empirically non-periodic
+      to ~10⁹ bits; <b>no proof</b>. (Problem 1)</li>
+    <li>Whether the density of 1s converges to <b>exactly ½</b>. (Problem 2)</li>
+    <li>Whether a <b>sub-O(n) shortcut</b> exists for the n-th bit, or Rule 30 is "computationally
+      irreducible" as Wolfram conjectures. (Problem 3)</li>
+    <li>Whether <b>Rule 30 itself is universal</b> (Turing-complete). Expected, but unproven — unlike
+      Rule 110.</li>
+    <li>The order/disorder boundary on the left drifts in at ≈ <b>0.252 cells/step</b> over the first
+      ~10⁵ steps — an <i>empirical measurement with random-looking fluctuations</i>, not a proven
+      constant; whether a fluctuation could ever reach the centre is unknown.</li>
+  </ul>
+</div>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">Small print (three things pop-science gets wrong)</p>
+  <ul style="margin:0">
+    <li><b>"Mathematica uses Rule 30 for randomness."</b> True historically — but exact version history
+      (when it was the default large-integer generator, when it changed) isn't pinned by a primary
+      source; Wikipedia uses the past tense, MathWorld the present. We make <b>no versioned claim</b>.</li>
+    <li><b>"The number of black cells at step n is ≈ n."</b> An <i>empirical fit</i> (Wikipedia marks it
+      "citation needed"), not a theorem.</li>
+    <li><b>"It passes randomness tests."</b> Qualified: Wolfram says the centre column passes many; but
+      Sipper &amp; Tomassini (1996) found weaknesses when <i>many columns</i> are read in parallel.</li>
+  </ul>
+</div>
+
+<div class="cl-prose">
+  <p>That's the shape of it: a kindergarten rule sitting on the boundary between something we can prove
+  cold (Rule 90) and three crisp, unsolved, $10,000 questions (Rule 30). The pattern looks random, passes
+  the tests, and ran in real software — and we still cannot prove the most basic things about a single
+  column of it. That gap is not a gap in this page; it's a gap in mathematics.</p>
+</div>
+
+<!-- ============================ REPRODUCE ============================ -->
+<div class="cl-repro">
+  <p class="cl-repro__title">How this was made / reproduce it</p>
+  <p style="margin:0 0 var(--space-2)">The simulations above run in your browser with the exact same step
+  rule used to generate the figures and to check every claim. Every headline number was verified
+  <b>two independent ways</b>, and the page's own JavaScript core is re-run in Node against Python ground
+  truth. Clone the repo and re-run it all:</p>
+  <div class="cl-eq">code/rule30/eca.py               ← the ECA engine (two centre-column methods)
+code/rule30/verify.py            ← run: python3 code/rule30/verify.py
+code/rule30/figures.py           ← regenerates the four hero images
+code/rule30/test_shipped_js.mjs  ← run: node code/rule30/test_shipped_js.mjs
+                                   (extracts THIS page's JS and tests it)</div>
+  <p style="margin:var(--space-2) 0 0">Checks that must pass: the engine reproduces all 256 rules ×
+  8 windows; Rule 90 = Pascal mod 2 for 513 rows (CA = Lucas = <code class="cl-code">math.comb</code>);
+  the two Rule-30 engines agree for all 2001 bits at N = 2000; and the N = 100 000 statistics are
+  computed and bounded (but, as §6 insists, <i>not</i> a proof of randomness). Source &amp; sourced facts:
+  <a href="https://github.com/rtmodb-rgb/curiosity-lab">github.com/rtmodb-rgb/curiosity-lab</a>.</p>
+</div>
+
+<!-- ============================ REFERENCES ============================ -->
+<h2 class="cl-h2">Sources</h2>
+<ul class="cl-refs">
+  <li>S. Wolfram, "Statistical Mechanics of Cellular Automata," <i>Rev. Mod. Phys.</i> <b>55</b>, 601
+    (1983) — introduces ECAs, the Wolfram code, and Rule 30.
+    <a href="https://doi.org/10.1103/RevModPhys.55.601">doi:10.1103/RevModPhys.55.601</a></li>
+  <li>S. Wolfram, "Universality and complexity in cellular automata," <i>Physica D</i> <b>10</b>, 1 (1984)
+    — the four classes.</li>
+  <li>S. Wolfram, "Random sequence generation by cellular automata," <i>Adv. Appl. Math.</i> <b>7</b>, 123
+    (1986) — the centre-column RNG proposal.</li>
+  <li>M. Cook, "Universality in Elementary Cellular Automata," <i>Complex Systems</i> <b>15</b>, 1 (2004)
+    — Rule 110 is Turing-complete. <a href="https://www.complex-systems.com/pdf/15-1-1.pdf">PDF</a></li>
+  <li>E. Jen, "Global properties of cellular automata," <i>J. Stat. Phys.</i> <b>43</b>, 219 (1986) —
+    Wolfram (2019) attributes the "no two columns both periodic" result to this paper.</li>
+  <li>G. Cattaneo, M. Finelli, L. Margara, "Investigating topological chaos…," <i>Theoret. Comput. Sci.</i>
+    <b>244</b>, 219 (2000). <a href="https://doi.org/10.1016/S0304-3975(98)00345-4">doi:10.1016/S0304-3975(98)00345-4</a></li>
+  <li>É. Lucas, "Théorie des Fonctions Numériques Simplement Périodiques," <i>Amer. J. Math.</i> <b>1</b>
+    (1878) — Lucas' theorem. (<a href="https://en.wikipedia.org/wiki/Lucas%27s_theorem">overview</a>)</li>
+  <li>S. Wolfram, "Announcing the Rule 30 Prizes" (2019).
+    <a href="https://writings.stephenwolfram.com/2019/10/announcing-the-rule-30-prizes/">writings.stephenwolfram.com</a>
+    · official rules <a href="https://www.rule30prize.org/">rule30prize.org</a></li>
+  <li>S. Wolfram, <i>A New Kind of Science</i> (2002). <a href="https://www.wolframscience.com/nks/">wolframscience.com/nks</a></li>
+  <li>D. Sipper, M. Tomassini, "Generating parallel random number generators…," <i>Int. J. Mod. Phys. C</i>
+    <b>7</b>, 181 (1996) — a qualification on Rule 30's randomness.</li>
+  <li>Centre-column sequence: <a href="https://oeis.org/A051023">OEIS A051023</a>. Reference encyclopedias:
+    MathWorld <a href="https://mathworld.wolfram.com/Rule30.html">Rule 30</a> /
+    <a href="https://mathworld.wolfram.com/Rule90.html">Rule 90</a>; Wikipedia
+    <a href="https://en.wikipedia.org/wiki/Rule_30">Rule 30</a>.</li>
+</ul>
+
+<footer class="cl-footer">
+  <b>Curiosity Lab #2 — Rule 30 &amp; elementary cellular automata.</b> Built and verified autonomously by
+  an AI-run lab, and independently red-teamed before publishing. Everything <i>we compute</i> (the engine,
+  Rule 90 = Pascal, the centre-column statistics, the figures) is reproduced by runnable code in the open
+  repo; results we take from the literature (the prize status, the chaos and universality theorems, the
+  0.252 drift) are cited and flagged. Facts sourced in
+  <a href="https://github.com/rtmodb-rgb/curiosity-lab">the repository</a>. · 2026-06-15
+</footer>
+</main>
+
+<script>
+/*===ECA_CORE_START===*/
+// Elementary cellular automata core. Pure logic, no DOM. Wolfram numbering:
+// neighborhood code = 4*L + 2*C + R (0..7); a rule's output for code c is bit c
+// of the rule number, i.e. (rule >> c) & 1. Boundary convention: cells outside
+// the array are 0 (quiescent), matching the reference engine eca.py.
+function ruleBit(rule, code){ return (rule >> code) & 1; }
+
+// One ECA step on a Uint8Array row (zero boundaries). Returns a new Uint8Array.
+function stepRow(row, rule){
+  const n = row.length, out = new Uint8Array(n);
+  for(let i=0;i<n;i++){
+    const L = i>0   ? row[i-1] : 0;
+    const C = row[i];
+    const R = i<n-1 ? row[i+1] : 0;
+    out[i] = (rule >> ((L<<2)|(C<<1)|R)) & 1;
+  }
+  return out;
+}
+
+// Space-time grid (array of rows). If `init` is given it is used verbatim;
+// otherwise a single 1 sits at the centre of a width-(2*steps+1) row, which is
+// boundary-exact for a centred seed (the light cone never reaches the edge).
+function evolve(rule, steps, init){
+  let row;
+  if(init){ row = Uint8Array.from(init); }
+  else { const w = 2*steps+1; row = new Uint8Array(w); row[w>>1] = 1; }
+  const grid = [row];
+  for(let t=1;t<=steps;t++){ row = stepRow(row, rule); grid.push(row); }
+  return grid;
+}
+
+// Rule 30 centre column from a single seed -- engine (a): numpy-style lattice.
+// Width 2n+1, seed centred; reads the centre cell after each of n steps.
+// Returns Uint8Array length n+1 (element t = centre cell after t steps).
+function rule30CenterLattice(n){
+  const w = 2*n+1, c = w>>1;
+  let row = new Uint8Array(w); row[c] = 1;
+  const out = new Uint8Array(n+1); out[0] = row[c];
+  for(let t=1;t<=n;t++){ row = stepRow(row, 30); out[t] = row[c]; }
+  return out;
+}
+
+// Rule 30 centre column -- engine (b): big-integer bitboard. The whole row is one
+// BigInt (bit i = cell i); Rule 30 updates it in one shot:
+//   new = (R<<1) XOR (R | (R>>1))   ( = left XOR (centre OR right) ), masked to w.
+function rule30CenterBits(n){
+  const w = 2*n+1, c = BigInt(w>>1);
+  const mask = (1n << BigInt(w)) - 1n;
+  let R = 1n << c;
+  const out = new Uint8Array(n+1); out[0] = Number((R >> c) & 1n);
+  for(let t=1;t<=n;t++){ R = ((R << 1n) ^ (R | (R >> 1n))) & mask; out[t] = Number((R >> c) & 1n); }
+  return out;
+}
+/*===ECA_CORE_END===*/
+
+/* ---------------------------------------------------------------- theme colours */
+function hexToRgb(h){ h=(h||'').trim().replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  const n=parseInt(h,16)||0; return [(n>>16)&255,(n>>8)&255,n&255]; }
+function themeColors(){
+  const cs=getComputedStyle(document.documentElement);
+  return { on: hexToRgb(cs.getPropertyValue('--c-ink')),
+           off: hexToRgb(cs.getPropertyValue('--c-inset')),
+           half: hexToRgb(cs.getPropertyValue('--c-amber')),
+           line: hexToRgb(cs.getPropertyValue('--c-line-strong')||cs.getPropertyValue('--c-line')),
+           ink:  cs.getPropertyValue('--c-ink').trim(),
+           dim:  cs.getPropertyValue('--c-dim').trim(),
+           amber:cs.getPropertyValue('--c-amber').trim(),
+           teal: cs.getPropertyValue('--c-teal').trim() };
+}
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+/* ===================================================================== 2. SIMULATOR */
+(function(){
+  const ZOOM={coarse:121, med:241, fine:481};
+  const PAD=64;
+  let zoom='med', COLS=ZOOM[zoom], ROWS=Math.round(COLS*0.6), W=COLS+2*PAD;
+  let rule=30, initMode='seed', density=0.5;
+  let rows=[]; let playing=false, raf=0, acc=0, last=0, sps=28;
+
+  const cv=document.getElementById('simCanvas'), ctx=cv.getContext('2d');
+  const ttHost=document.getElementById('ttHost');
+  const ruleRange=document.getElementById('ruleRange'), ruleNum=document.getElementById('ruleNum');
+  const readout=document.getElementById('ruleReadout');
+  const stepsEl=document.getElementById('simSteps');
+  const btnPlay=document.getElementById('btnPlay');
+  let COL=themeColors();
+
+  /* ---- truth-table editor ---- */
+  const outs=[];
+  for(let code=7; code>=0; code--){
+    const col=document.createElement('div'); col.className='tt-col';
+    const nb=document.createElement('div'); nb.className='tt-nb';
+    for(let b=2;b>=0;b--){ const s=document.createElement('span'); s.className='bit'+(((code>>b)&1)?' on':''); nb.appendChild(s); }
+    const arr=document.createElement('div'); arr.className='tt-arrow'; arr.textContent='↓';
+    const out=document.createElement('button'); out.type='button'; out.className='tt-out'; out.dataset.code=code;
+    const lbl=document.createElement('div'); lbl.className='tt-code'; lbl.textContent=bin3(code);
+    out.addEventListener('click', ()=> setRule(rule ^ (1<<code)) );
+    outs[code]=out;
+    col.append(nb,arr,out,lbl); ttHost.appendChild(col);
+  }
+  function bin3(c){ return ((c>>2)&1)+''+((c>>1)&1)+''+(c&1); }
+
+  const NICK={30:'L ⊕ (C ∨ R)', 60:'L ⊕ C', 90:'L ⊕ R', 150:'L ⊕ C ⊕ R'};
+  function booleanCanonical(r){
+    const t=[];
+    for(let c=7;c>=0;c--) if((r>>c)&1){ const L=(c>>2)&1,C=(c>>1)&1,R=c&1;
+      t.push((L?'L':'¬L')+'·'+(C?'C':'¬C')+'·'+(R?'R':'¬R')); }
+    if(t.length===0) return '0  (always white)';
+    if(t.length===8) return '1  (always black)';
+    return t.join('  ∨  ');
+  }
+  function ones1(r){ const a=[]; for(let c=7;c>=0;c--) if((r>>c)&1) a.push(bin3(c)); return a.join(', '); }
+
+  function updateUI(){
+    for(let c=0;c<8;c++){ const on=(rule>>c)&1; const o=outs[c];
+      o.textContent=on; o.classList.toggle('on',!!on); o.setAttribute('aria-pressed', on?'true':'false');
+      o.setAttribute('aria-label','neighbourhood '+bin3(c)+' → output '+on+', toggle'); }
+    ruleRange.value=rule; ruleNum.value=rule;
+    document.querySelectorAll('#presetSeg button').forEach(b=>{
+      const on=(+b.dataset.rule===rule); b.classList.toggle('is-on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+    const nick = NICK[rule] ? '   <span class="lbl">=</span> <b>'+NICK[rule]+'</b>' : '';
+    readout.innerHTML =
+      '<span class="lbl">Rule</span> <b>'+rule+'</b>'
+      +'   <span class="lbl">binary</span> <span class="rulebin">'+rule.toString(2).padStart(8,'0')+'</span>'+nick
+      +'<br><span class="lbl">outputs 1 for windows:</span> '+(ones1(rule)||'(none)')
+      +'<br><span class="lbl">Boolean:</span> <span class="boolean">'+booleanCanonical(rule)+'</span>';
+  }
+
+  /* ---- canvas / model ---- */
+  function makeInit(){
+    const r=new Uint8Array(W);
+    if(initMode==='seed'){ r[W>>1]=1; }
+    else { for(let i=0;i<W;i++) r[i]=(Math.random()<density)?1:0; }
+    return r;
+  }
+  function reset(){ rows=[makeInit()]; acc=0; paint(); stepsEl.textContent='0'; }
+  function doStep(){ const nx=stepRow(rows[rows.length-1],rule); rows.push(nx);
+    if(rows.length>ROWS) rows.shift(); paint();
+    stepsEl.textContent=(+stepsEl.textContent+1).toLocaleString(); }
+  function paint(){
+    if(cv.width!==COLS||cv.height!==ROWS){ cv.width=COLS; cv.height=ROWS; }
+    const img=ctx.createImageData(COLS,ROWS), d=img.data;
+    const on=COL.on, off=COL.off;
+    // fill off
+    for(let p=0;p<d.length;p+=4){ d[p]=off[0]; d[p+1]=off[1]; d[p+2]=off[2]; d[p+3]=255; }
+    for(let y=0;y<rows.length;y++){ const row=rows[y]; const base=y*COLS*4;
+      for(let x=0;x<COLS;x++){ if(row[PAD+x]){ const o=base+x*4; d[o]=on[0]; d[o+1]=on[1]; d[o+2]=on[2]; } } }
+    ctx.putImageData(img,0,0);
+  }
+  function setRule(r){ rule=((r%256)+256)%256; updateUI(); reset(); }
+
+  /* ---- animation loop ---- */
+  function loop(ts){ if(!playing) return;
+    if(!last) last=ts; acc+=(ts-last)/1000*sps; last=ts;
+    let n=0; while(acc>=1 && n<200){ doStep(); acc-=1; n++; }
+    raf=requestAnimationFrame(loop);
+  }
+  function play(on){ playing=on; btnPlay.classList.toggle('is-on',on); btnPlay.setAttribute('aria-pressed',on?'true':'false');
+    btnPlay.textContent= on?'❚❚ Pause':'▶ Play';
+    if(on){ last=0; raf=requestAnimationFrame(loop); } else if(raf) cancelAnimationFrame(raf); }
+
+  /* ---- controls ---- */
+  ruleRange.addEventListener('input', e=> setRule(+e.target.value));
+  ruleNum.addEventListener('change', e=>{ let v=parseInt(e.target.value,10); if(isNaN(v)) v=0; setRule(v); });
+  document.querySelectorAll('#presetSeg button').forEach(b=> b.addEventListener('click',()=> setRule(+b.dataset.rule)));
+  btnPlay.addEventListener('click', ()=> play(!playing));
+  document.getElementById('btnStep').addEventListener('click', ()=>{ if(playing) play(false); doStep(); });
+  document.getElementById('btnReset').addEventListener('click', reset);
+  document.querySelectorAll('#initSeg button').forEach(b=> b.addEventListener('click',()=>{
+    initMode=b.dataset.init; document.querySelectorAll('#initSeg button').forEach(x=>{
+      const on=(x===b); x.classList.toggle('is-on',on); x.setAttribute('aria-pressed',on?'true':'false'); });
+    document.getElementById('densWrap').style.display = (initMode==='random')?'flex':'none'; reset(); }));
+  document.querySelectorAll('#zoomSeg button').forEach(b=> b.addEventListener('click',()=>{
+    zoom=b.dataset.zoom; COLS=ZOOM[zoom]; ROWS=Math.round(COLS*0.6); W=COLS+2*PAD;
+    document.querySelectorAll('#zoomSeg button').forEach(x=>{
+      const on=(x===b); x.classList.toggle('is-on',on); x.setAttribute('aria-pressed',on?'true':'false'); });
+    reset(); }));
+  const speed=document.getElementById('speed'), speedV=document.getElementById('speedV');
+  speed.addEventListener('input', e=>{ sps=+e.target.value; speedV.textContent=sps+'/s'; });
+  const dens=document.getElementById('dens'), densV=document.getElementById('densV');
+  dens.addEventListener('input', e=>{ density=(+e.target.value)/100; densV.textContent=e.target.value+'%';
+    if(initMode==='random') reset(); });
+
+  darkQuery.addEventListener('change', ()=>{ COL=themeColors(); paint(); });
+  updateUI(); reset();   // starts PAUSED (honours reduced-motion and good manners)
+})();
+
+/* ===================================================================== 3. RULE 90 = PASCAL */
+(function(){
+  const cv=document.getElementById('r90Canvas'), ctx=cv.getContext('2d');
+  const T=127; let COL=themeColors();
+  function draw(){
+    const grid=evolve(90,T); const w=grid[0].length;
+    cv.width=w; cv.height=T+1;
+    const img=ctx.createImageData(w,T+1), d=img.data, on=COL.on, off=COL.off;
+    for(let p=0;p<d.length;p+=4){ d[p]=off[0]; d[p+1]=off[1]; d[p+2]=off[2]; d[p+3]=255; }
+    for(let t=0;t<=T;t++){ const base=t*w*4;
+      for(let x=0;x<w;x++) if(grid[t][x]){ const o=base+x*4; d[o]=on[0]; d[o+1]=on[1]; d[o+2]=on[2]; } }
+    ctx.putImageData(img,0,0);
+  }
+  const verdict=document.getElementById('lucasVerdict');
+  document.getElementById('btnLucas').addEventListener('click', ()=>{
+    const grid=evolve(90,T); const c=(grid[0].length-1)/2;
+    let ok=true, rowsOK=0;
+    for(let t=0;t<=T && ok;t++){
+      // on-sublattice: x = c + (-t + 2k), k=0..t  → must equal [C(t,k) odd]
+      for(let k=0;k<=t;k++){ const x=c+(-t+2*k);
+        const odd=((BigInt(k)&~BigInt(t))===0n)?1:0;
+        if(grid[t][x]!==odd){ ok=false; break; } }
+      // off-sublattice cells (opposite parity) must be 0
+      for(let x=c-t;x<=c+t && ok;x++){ if(((x-(c-t))&1)===1 && grid[t][x]!==0){ ok=false; break; } }
+      if(ok) rowsOK++;
+    }
+    verdict.innerHTML = ok
+      ? '<span class="cl-ok">identical — all '+(T+1)+'/'+(T+1)+' rows match C(t,k) mod 2 (Lucas)</span>'
+      : '<span class="cl-bad">mismatch — see console</span>';
+  });
+  darkQuery.addEventListener('change', ()=>{ COL=themeColors(); draw(); });
+  draw();
+})();
+
+/* ===================================================================== 4. CENTRE COLUMN */
+(function(){
+  const NMAX=2000, Wc=2*NMAX+1, cc=Wc>>1;
+  let row, step, ones, pts, playing=false, raf=0, acc=0, last=0;
+  const SPS=520; // steps/sec when running live
+  let COL=themeColors();
+  const elN=document.getElementById('ccN'), elOnes=document.getElementById('ccOnes'),
+        elDens=document.getElementById('ccDens'), elDelta=document.getElementById('ccDelta');
+  const plot=document.getElementById('ccPlot'), pctx=plot.getContext('2d');
+  const btnPlay=document.getElementById('ccPlay');
+
+  function reset(){ row=new Uint8Array(Wc); row[cc]=1; step=0; ones=1; pts=[]; acc=0; stats(); drawPlot(); }
+  function advance(){ row=stepRow(row,30); step++; ones+=row[cc];
+    if(step%4===0 || step<40) pts.push([step, ones/(step+1)]); }
+  function stats(){ const dens=ones/(step+1);
+    elN.textContent=step.toLocaleString(); elOnes.textContent=ones.toLocaleString()+' / '+(step+1-ones).toLocaleString();
+    elDens.textContent=dens.toFixed(6); elDelta.textContent=Math.abs(dens-0.5).toFixed(6); }
+  function drawPlot(){
+    const W=plot.width,H=plot.height; pctx.clearRect(0,0,W,H);
+    pctx.fillStyle=getComputedStyle(plot).backgroundColor; pctx.fillRect(0,0,W,H);
+    const x0=46,x1=W-12,y0=H-26,y1=12; const yLo=0.40,yHi=0.60;
+    const sx=v=>x0+(v/NMAX)*(x1-x0), sy=v=>y0-((v-yLo)/(yHi-yLo))*(y0-y1);
+    // axes
+    pctx.strokeStyle=COL.ink; pctx.globalAlpha=.35; pctx.lineWidth=1;
+    pctx.beginPath(); pctx.moveTo(x0,y1); pctx.lineTo(x0,y0); pctx.lineTo(x1,y0); pctx.stroke();
+    pctx.globalAlpha=1;
+    // half line
+    pctx.strokeStyle=COL.amber; pctx.setLineDash([5,4]); pctx.lineWidth=1.4;
+    pctx.beginPath(); pctx.moveTo(x0,sy(0.5)); pctx.lineTo(x1,sy(0.5)); pctx.stroke(); pctx.setLineDash([]);
+    // labels
+    pctx.fillStyle=COL.dim; pctx.font='12px ui-monospace,Menlo,Consolas,monospace';
+    pctx.fillText('0.60',6,y1+10); pctx.fillText('½',12,sy(0.5)+4); pctx.fillText('0.40',6,y0+2);
+    pctx.fillText('density of 1s',x0+2,y1+2); pctx.fillText('step → '+NMAX,x1-86,y0+18);
+    // curve
+    if(pts.length>1){
+      pctx.strokeStyle=COL.teal; pctx.lineWidth=1.6; pctx.beginPath(); let started=false;
+      for(const [s,dv] of pts){ if(s<8) continue; const X=sx(s),Y=sy(Math.max(yLo,Math.min(yHi,dv)));
+        if(!started){ pctx.moveTo(X,Y); started=true; } else pctx.lineTo(X,Y); }
+      pctx.stroke();
+    }
+  }
+  function loop(ts){ if(!playing) return; if(!last) last=ts; acc+=(ts-last)/1000*SPS; last=ts;
+    let n=0; while(acc>=1 && step<NMAX && n<3000){ advance(); acc-=1; n++; }
+    stats(); drawPlot();
+    if(step>=NMAX){ play(false); } else raf=requestAnimationFrame(loop);
+  }
+  function play(on){ playing=on; btnPlay.classList.toggle('is-on',on); btnPlay.setAttribute('aria-pressed',on?'true':'false');
+    btnPlay.textContent=on?'❚❚ Pause':(step>=NMAX?'▶ Run the centre column':'▶ Run the centre column');
+    if(on){ if(step>=NMAX) reset(); last=0; raf=requestAnimationFrame(loop); } else if(raf) cancelAnimationFrame(raf); }
+
+  btnPlay.addEventListener('click', ()=> play(!playing));
+  document.getElementById('ccJump').addEventListener('click', ()=>{ if(playing) play(false);
+    if(step>=NMAX) reset(); while(step<NMAX) advance(); stats(); drawPlot(); });
+  document.getElementById('ccReset').addEventListener('click', ()=>{ if(playing) play(false); reset(); });
+
+  const verdict=document.getElementById('enginesVerdict');
+  document.getElementById('btnEngines').addEventListener('click', ()=>{
+    const lat=rule30CenterLattice(NMAX), bits=rule30CenterBits(NMAX);
+    let same=lat.length===bits.length, o=0;
+    for(let i=0;i<lat.length;i++){ if(lat[i]!==bits[i]) same=false; o+=bits[i]; }
+    const dens=o/(NMAX+1);
+    verdict.innerHTML = same
+      ? '<span class="cl-ok">identical — both engines agree on all '+(NMAX+1)+' bits; density of 1s = '+dens.toFixed(6)+' (= 0.4888)</span>'
+      : '<span class="cl-bad">mismatch between engines — see console</span>';
+  });
+  darkQuery.addEventListener('change', ()=>{ COL=themeColors(); drawPlot(); });
+  reset();   // starts paused
+})();
+</script>
+</body>
+</html>

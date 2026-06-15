@@ -28,6 +28,7 @@ and from a tiny, readable code repo.
 | # | Title | Live | Status |
 |---|-------|------|--------|
 | 01 | **The Abelian Sandpile** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/sandpile/) | ✅ shipped & verified |
+| 02 | **Rule 30: Is it random?** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/rule30/) | ✅ shipped & verified |
 
 ### #01 — The Abelian Sandpile
 One kindergarten rule about falling sand hides an algebraic group, a fractal "zero," and a number you can
@@ -36,6 +37,15 @@ recurrent sand states. The page includes live in-browser simulations, an interac
 (brute-force recurrent count vs. exact determinant), an honest treatment of self-organised criticality
 (it is **not** a single clean power law — it's multifractal), and the single-source fractal with its
 Apollonian scaling limit.
+
+### #02 — Rule 30: Is it random?
+One line of cells, one tiny rule — `new = left XOR (centre OR right)` — and a pattern that has resisted
+explanation for 40 years (Wolfram's $30,000 Rule 30 Prize is still open). The page puts a rule we can
+**prove** — Rule 90 is exactly Pascal's triangle mod 2, the Sierpiński gasket, via Lucas' theorem — right
+next to the open question about Rule 30's centre column (does it ever become periodic? is its density of 1s
+exactly ½?). You can run all 256 elementary rules live in the browser. Every statistic we compute (density,
+2-bit block frequencies, run lengths, Shannon entropy) is reproduced two independent ways — and we are
+careful to say what those numbers do **not** prove: *looking* random is not the same as *being* random.
 
 ## Reproduce every number yourself
 
@@ -50,6 +60,14 @@ python3 code/sandpile/verify.py        # needs numpy
 # Run the EXACT JavaScript shipped on the page, in Node — proves the in-browser
 # "verify" button really outputs matching numbers, the identity recipe is idempotent, etc.
 node code/sandpile/test_shipped_js.mjs
+
+# --- Lab #02 — Rule 30 / elementary cellular automata ---
+# Python checks: Rule 90 grid == Pascal's triangle mod 2 (Lucas' theorem), two
+# independent Rule-30 centre-column engines agree exactly, single-column statistics
+python3 code/rule30/verify.py          # needs numpy
+
+# Run the EXACT ECA JavaScript shipped on the Rule 30 page, in Node, vs. Python
+node code/rule30/test_shipped_js.mjs
 ```
 
 Exact sandpile-group orders for the n×n grid (= number of spanning trees = det of the reduced Laplacian),
@@ -72,11 +90,19 @@ docs/                      # the live site (GitHub Pages serves from here)
   index.html               #   lab landing page
   sandpile/index.html      #   experiment #01
   sandpile/img/            #   computed hero figures
+  rule30/index.html        #   experiment #02
+  rule30/img/              #   computed hero figures
 code/sandpile/
   sandpile.py              # core model: stabilise, identity, recurrent test, exact determinant
   verify.py                # one-command reproduction of every headline claim
   figures.py               # regenerates the hero images
   test_shipped_js.mjs      # runs the page's own JS under Node
+  facts.md                 # sourced facts, caveats and references
+code/rule30/
+  eca.py                   # elementary CA engine: evolve, two Rule-30 centre-column methods
+  verify.py                # reproduces Rule 90 = Pascal mod 2, engine agreement, the statistics
+  figures.py               # regenerates the hero images
+  test_shipped_js.mjs      # runs the page's own ECA JS under Node
   facts.md                 # sourced facts, caveats and references
 ```
 
