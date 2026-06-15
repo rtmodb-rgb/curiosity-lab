@@ -1,0 +1,988 @@
+{
+  "source": "CIA World Factbook — country/territory total area (sq km), Geography > Area > total",
+  "source_url": "https://www.cia.gov/the-world-factbook/field/area/",
+  "source_note": "Values transcribed via the factbook.json mirror (https://github.com/factbook/factbook.json, CC0 1.0), which faithfully reproduces the CIA World Factbook Area field. Spot-checked against the Factbook (Russia 17,098,242; Canada 9,984,670; USA 9,833,517; China 9,596,960; Brazil 8,515,770; Australia 7,741,220; India 3,287,263; Monaco 2 — all exact). Chad and Niger are stated in the Factbook as \"1.284 million\" and \"1.267 million\" sq km respectively and are recorded here as 1284000 and 1267000.",
+  "inclusion_rule": "All entities in the 10 regional/continental Factbook sections that report a positive total-area figure. Includes sovereign states AND dependencies/territories (e.g. Greenland, Hong Kong, Puerto Rico). Excludes: ocean/World/EU aggregates, Antarctica, the Holy See (Vatican, listed by the Factbook as \"0 sq km\"), and the US Pacific Island Wildlife Refuges aggregate entry (no single area). [Correction 2026-06-15: the factbook.json 'ee.json' file — the European Union supranational aggregate, total 4,236,351 sq km — had been pulled in under its raw filename; it is an aggregate of member states already listed, so it is excluded here per this same rule. n: 245->244.]",
+  "license": "Public domain (underlying CIA World Factbook is a U.S. Government work; mirror released under CC0 1.0)",
+  "retrieved": "2026-06-15",
+  "unit": "sq km (total area)",
+  "n": 244,
+  "data": [
+    {
+      "name": "Russia",
+      "area_km2": 17098242
+    },
+    {
+      "name": "Canada",
+      "area_km2": 9984670
+    },
+    {
+      "name": "United States",
+      "area_km2": 9833517
+    },
+    {
+      "name": "China",
+      "area_km2": 9596960
+    },
+    {
+      "name": "Brazil",
+      "area_km2": 8515770
+    },
+    {
+      "name": "Australia",
+      "area_km2": 7741220
+    },
+    {
+      "name": "India",
+      "area_km2": 3287263
+    },
+    {
+      "name": "Argentina",
+      "area_km2": 2780400
+    },
+    {
+      "name": "Kazakhstan",
+      "area_km2": 2724900
+    },
+    {
+      "name": "Algeria",
+      "area_km2": 2381740
+    },
+    {
+      "name": "DRC",
+      "area_km2": 2344858
+    },
+    {
+      "name": "Greenland",
+      "area_km2": 2166086
+    },
+    {
+      "name": "Saudi Arabia",
+      "area_km2": 2149690
+    },
+    {
+      "name": "Mexico",
+      "area_km2": 1964375
+    },
+    {
+      "name": "Indonesia",
+      "area_km2": 1904569
+    },
+    {
+      "name": "Sudan",
+      "area_km2": 1861484
+    },
+    {
+      "name": "Libya",
+      "area_km2": 1759540
+    },
+    {
+      "name": "Iran",
+      "area_km2": 1648195
+    },
+    {
+      "name": "Mongolia",
+      "area_km2": 1564116
+    },
+    {
+      "name": "Peru",
+      "area_km2": 1285216
+    },
+    {
+      "name": "Chad",
+      "area_km2": 1284000
+    },
+    {
+      "name": "Niger",
+      "area_km2": 1267000
+    },
+    {
+      "name": "Angola",
+      "area_km2": 1246700
+    },
+    {
+      "name": "Mali",
+      "area_km2": 1240192
+    },
+    {
+      "name": "South Africa",
+      "area_km2": 1219090
+    },
+    {
+      "name": "Colombia",
+      "area_km2": 1138910
+    },
+    {
+      "name": "Ethiopia",
+      "area_km2": 1104300
+    },
+    {
+      "name": "Bolivia",
+      "area_km2": 1098581
+    },
+    {
+      "name": "Mauritania",
+      "area_km2": 1030700
+    },
+    {
+      "name": "Egypt",
+      "area_km2": 1001450
+    },
+    {
+      "name": "Tanzania",
+      "area_km2": 947300
+    },
+    {
+      "name": "Nigeria",
+      "area_km2": 923768
+    },
+    {
+      "name": "Venezuela",
+      "area_km2": 912050
+    },
+    {
+      "name": "Namibia",
+      "area_km2": 824292
+    },
+    {
+      "name": "Mozambique",
+      "area_km2": 799380
+    },
+    {
+      "name": "Pakistan",
+      "area_km2": 796095
+    },
+    {
+      "name": "Turkey",
+      "area_km2": 783562
+    },
+    {
+      "name": "Chile",
+      "area_km2": 756102
+    },
+    {
+      "name": "Zambia",
+      "area_km2": 752618
+    },
+    {
+      "name": "Morocco",
+      "area_km2": 716550
+    },
+    {
+      "name": "Burma",
+      "area_km2": 676578
+    },
+    {
+      "name": "Afghanistan",
+      "area_km2": 652230
+    },
+    {
+      "name": "South Sudan",
+      "area_km2": 644329
+    },
+    {
+      "name": "France",
+      "area_km2": 643801
+    },
+    {
+      "name": "Somalia",
+      "area_km2": 637657
+    },
+    {
+      "name": "Central African Republic",
+      "area_km2": 622984
+    },
+    {
+      "name": "Ukraine",
+      "area_km2": 603550
+    },
+    {
+      "name": "Madagascar",
+      "area_km2": 587041
+    },
+    {
+      "name": "Botswana",
+      "area_km2": 581730
+    },
+    {
+      "name": "Kenya",
+      "area_km2": 580367
+    },
+    {
+      "name": "Yemen",
+      "area_km2": 527968
+    },
+    {
+      "name": "Thailand",
+      "area_km2": 513120
+    },
+    {
+      "name": "Spain",
+      "area_km2": 505370
+    },
+    {
+      "name": "Turkmenistan",
+      "area_km2": 488100
+    },
+    {
+      "name": "Cameroon",
+      "area_km2": 475440
+    },
+    {
+      "name": "Papua New Guinea",
+      "area_km2": 462840
+    },
+    {
+      "name": "Sweden",
+      "area_km2": 450295
+    },
+    {
+      "name": "Uzbekistan",
+      "area_km2": 447400
+    },
+    {
+      "name": "Iraq",
+      "area_km2": 438317
+    },
+    {
+      "name": "Paraguay",
+      "area_km2": 406752
+    },
+    {
+      "name": "Zimbabwe",
+      "area_km2": 390757
+    },
+    {
+      "name": "Japan",
+      "area_km2": 377915
+    },
+    {
+      "name": "Germany",
+      "area_km2": 357022
+    },
+    {
+      "name": "Congo (Brazzaville)",
+      "area_km2": 342000
+    },
+    {
+      "name": "Finland",
+      "area_km2": 338145
+    },
+    {
+      "name": "Vietnam",
+      "area_km2": 331210
+    },
+    {
+      "name": "Malaysia",
+      "area_km2": 329847
+    },
+    {
+      "name": "Norway",
+      "area_km2": 323802
+    },
+    {
+      "name": "Côte d'Ivoire",
+      "area_km2": 322463
+    },
+    {
+      "name": "Poland",
+      "area_km2": 312685
+    },
+    {
+      "name": "Oman",
+      "area_km2": 309500
+    },
+    {
+      "name": "Italy",
+      "area_km2": 301340
+    },
+    {
+      "name": "Philippines",
+      "area_km2": 300000
+    },
+    {
+      "name": "Ecuador",
+      "area_km2": 283561
+    },
+    {
+      "name": "Burkina Faso",
+      "area_km2": 274200
+    },
+    {
+      "name": "New Zealand",
+      "area_km2": 268838
+    },
+    {
+      "name": "Gabon",
+      "area_km2": 267667
+    },
+    {
+      "name": "Western Sahara",
+      "area_km2": 266000
+    },
+    {
+      "name": "Guinea",
+      "area_km2": 245857
+    },
+    {
+      "name": "United Kingdom",
+      "area_km2": 243610
+    },
+    {
+      "name": "Uganda",
+      "area_km2": 241038
+    },
+    {
+      "name": "Ghana",
+      "area_km2": 238533
+    },
+    {
+      "name": "Romania",
+      "area_km2": 238391
+    },
+    {
+      "name": "Laos",
+      "area_km2": 236800
+    },
+    {
+      "name": "Guyana",
+      "area_km2": 214969
+    },
+    {
+      "name": "Belarus",
+      "area_km2": 207600
+    },
+    {
+      "name": "Kyrgyzstan",
+      "area_km2": 199951
+    },
+    {
+      "name": "Senegal",
+      "area_km2": 196722
+    },
+    {
+      "name": "Syria",
+      "area_km2": 187437
+    },
+    {
+      "name": "Cambodia",
+      "area_km2": 181035
+    },
+    {
+      "name": "Uruguay",
+      "area_km2": 176215
+    },
+    {
+      "name": "Suriname",
+      "area_km2": 163820
+    },
+    {
+      "name": "Tunisia",
+      "area_km2": 163610
+    },
+    {
+      "name": "Bangladesh",
+      "area_km2": 148460
+    },
+    {
+      "name": "Nepal",
+      "area_km2": 147181
+    },
+    {
+      "name": "Tajikistan",
+      "area_km2": 144100
+    },
+    {
+      "name": "Greece",
+      "area_km2": 131957
+    },
+    {
+      "name": "Nicaragua",
+      "area_km2": 130370
+    },
+    {
+      "name": "North Korea",
+      "area_km2": 120538
+    },
+    {
+      "name": "Malawi",
+      "area_km2": 118484
+    },
+    {
+      "name": "Eritrea",
+      "area_km2": 117600
+    },
+    {
+      "name": "Benin",
+      "area_km2": 112622
+    },
+    {
+      "name": "Honduras",
+      "area_km2": 112090
+    },
+    {
+      "name": "Liberia",
+      "area_km2": 111369
+    },
+    {
+      "name": "Bulgaria",
+      "area_km2": 110879
+    },
+    {
+      "name": "Cuba",
+      "area_km2": 110860
+    },
+    {
+      "name": "Guatemala",
+      "area_km2": 108889
+    },
+    {
+      "name": "Iceland",
+      "area_km2": 103000
+    },
+    {
+      "name": "South Korea",
+      "area_km2": 99720
+    },
+    {
+      "name": "Hungary",
+      "area_km2": 93028
+    },
+    {
+      "name": "Portugal",
+      "area_km2": 92090
+    },
+    {
+      "name": "Jordan",
+      "area_km2": 89342
+    },
+    {
+      "name": "Azerbaijan",
+      "area_km2": 86600
+    },
+    {
+      "name": "Austria",
+      "area_km2": 83871
+    },
+    {
+      "name": "Czechia",
+      "area_km2": 78867
+    },
+    {
+      "name": "Serbia",
+      "area_km2": 77474
+    },
+    {
+      "name": "Panama",
+      "area_km2": 75420
+    },
+    {
+      "name": "Sierra Leone",
+      "area_km2": 71740
+    },
+    {
+      "name": "Ireland",
+      "area_km2": 70273
+    },
+    {
+      "name": "Georgia",
+      "area_km2": 69700
+    },
+    {
+      "name": "Sri Lanka",
+      "area_km2": 65610
+    },
+    {
+      "name": "Lithuania",
+      "area_km2": 65300
+    },
+    {
+      "name": "Latvia",
+      "area_km2": 64589
+    },
+    {
+      "name": "Svalbard (sometimes referred to as Spitsbergen, the largest island in the archipelago)",
+      "area_km2": 62045
+    },
+    {
+      "name": "Togo",
+      "area_km2": 56785
+    },
+    {
+      "name": "Croatia",
+      "area_km2": 56594
+    },
+    {
+      "name": "Bosnia and Herzegovina",
+      "area_km2": 51197
+    },
+    {
+      "name": "Costa Rica",
+      "area_km2": 51100
+    },
+    {
+      "name": "Slovakia",
+      "area_km2": 49035
+    },
+    {
+      "name": "Dominican Republic",
+      "area_km2": 48670
+    },
+    {
+      "name": "Estonia",
+      "area_km2": 45228
+    },
+    {
+      "name": "Denmark",
+      "area_km2": 43094
+    },
+    {
+      "name": "Netherlands",
+      "area_km2": 41543
+    },
+    {
+      "name": "Switzerland",
+      "area_km2": 41277
+    },
+    {
+      "name": "Bhutan",
+      "area_km2": 38394
+    },
+    {
+      "name": "Guinea-Bissau",
+      "area_km2": 36125
+    },
+    {
+      "name": "Taiwan",
+      "area_km2": 35980
+    },
+    {
+      "name": "Moldova",
+      "area_km2": 33851
+    },
+    {
+      "name": "Belgium",
+      "area_km2": 30528
+    },
+    {
+      "name": "Lesotho",
+      "area_km2": 30355
+    },
+    {
+      "name": "Armenia",
+      "area_km2": 29743
+    },
+    {
+      "name": "Solomon Islands",
+      "area_km2": 28896
+    },
+    {
+      "name": "Albania",
+      "area_km2": 28748
+    },
+    {
+      "name": "Equatorial Guinea",
+      "area_km2": 28051
+    },
+    {
+      "name": "Burundi",
+      "area_km2": 27830
+    },
+    {
+      "name": "Haiti",
+      "area_km2": 27750
+    },
+    {
+      "name": "Rwanda",
+      "area_km2": 26338
+    },
+    {
+      "name": "North Macedonia",
+      "area_km2": 25713
+    },
+    {
+      "name": "Djibouti",
+      "area_km2": 23200
+    },
+    {
+      "name": "Belize",
+      "area_km2": 22966
+    },
+    {
+      "name": "Israel",
+      "area_km2": 21937
+    },
+    {
+      "name": "El Salvador",
+      "area_km2": 21041
+    },
+    {
+      "name": "Slovenia",
+      "area_km2": 20273
+    },
+    {
+      "name": "New Caledonia",
+      "area_km2": 18575
+    },
+    {
+      "name": "Fiji",
+      "area_km2": 18274
+    },
+    {
+      "name": "Kuwait",
+      "area_km2": 17818
+    },
+    {
+      "name": "Eswatini",
+      "area_km2": 17364
+    },
+    {
+      "name": "Timor-Leste",
+      "area_km2": 14874
+    },
+    {
+      "name": "The Bahamas",
+      "area_km2": 13880
+    },
+    {
+      "name": "Montenegro",
+      "area_km2": 13812
+    },
+    {
+      "name": "Vanuatu",
+      "area_km2": 12189
+    },
+    {
+      "name": "Falkland Islands (Islas Malvinas)",
+      "area_km2": 12173
+    },
+    {
+      "name": "Qatar",
+      "area_km2": 11586
+    },
+    {
+      "name": "The Gambia",
+      "area_km2": 11300
+    },
+    {
+      "name": "Jamaica",
+      "area_km2": 10991
+    },
+    {
+      "name": "Kosovo",
+      "area_km2": 10887
+    },
+    {
+      "name": "Lebanon",
+      "area_km2": 10400
+    },
+    {
+      "name": "Cyprus",
+      "area_km2": 9251
+    },
+    {
+      "name": "Puerto Rico",
+      "area_km2": 9104
+    },
+    {
+      "name": "West Bank",
+      "area_km2": 5860
+    },
+    {
+      "name": "Brunei",
+      "area_km2": 5765
+    },
+    {
+      "name": "Trinidad and Tobago",
+      "area_km2": 5128
+    },
+    {
+      "name": "French Polynesia",
+      "area_km2": 4167
+    },
+    {
+      "name": "Cabo Verde",
+      "area_km2": 4033
+    },
+    {
+      "name": "South Georgia and South Sandwich Islands",
+      "area_km2": 3903
+    },
+    {
+      "name": "Samoa",
+      "area_km2": 2831
+    },
+    {
+      "name": "Luxembourg",
+      "area_km2": 2586
+    },
+    {
+      "name": "Comoros",
+      "area_km2": 2235
+    },
+    {
+      "name": "Mauritius",
+      "area_km2": 2040
+    },
+    {
+      "name": "Virgin Islands",
+      "area_km2": 1910
+    },
+    {
+      "name": "Faroe Islands",
+      "area_km2": 1393
+    },
+    {
+      "name": "Hong Kong",
+      "area_km2": 1108
+    },
+    {
+      "name": "Sao Tome and Principe",
+      "area_km2": 964
+    },
+    {
+      "name": "Turks and Caicos Islands",
+      "area_km2": 948
+    },
+    {
+      "name": "Kiribati",
+      "area_km2": 811
+    },
+    {
+      "name": "Bahrain",
+      "area_km2": 760
+    },
+    {
+      "name": "Dominica",
+      "area_km2": 751
+    },
+    {
+      "name": "Tonga",
+      "area_km2": 747
+    },
+    {
+      "name": "Singapore",
+      "area_km2": 719
+    },
+    {
+      "name": "Saint Lucia",
+      "area_km2": 616
+    },
+    {
+      "name": "Isle of Man",
+      "area_km2": 572
+    },
+    {
+      "name": "Guam",
+      "area_km2": 544
+    },
+    {
+      "name": "Andorra",
+      "area_km2": 468
+    },
+    {
+      "name": "Northern Mariana Islands",
+      "area_km2": 464
+    },
+    {
+      "name": "Palau",
+      "area_km2": 459
+    },
+    {
+      "name": "Seychelles",
+      "area_km2": 455
+    },
+    {
+      "name": "Curacao",
+      "area_km2": 444
+    },
+    {
+      "name": "Antigua and Barbuda",
+      "area_km2": 443
+    },
+    {
+      "name": "Barbados",
+      "area_km2": 430
+    },
+    {
+      "name": "Saint Vincent and the Grenadines",
+      "area_km2": 389
+    },
+    {
+      "name": "Jan Mayen",
+      "area_km2": 377
+    },
+    {
+      "name": "Gaza, Gaza Strip",
+      "area_km2": 360
+    },
+    {
+      "name": "Grenada",
+      "area_km2": 344
+    },
+    {
+      "name": "Malta",
+      "area_km2": 316
+    },
+    {
+      "name": "Maldives",
+      "area_km2": 298
+    },
+    {
+      "name": "Cayman Islands",
+      "area_km2": 264
+    },
+    {
+      "name": "Saint Kitts and Nevis",
+      "area_km2": 261
+    },
+    {
+      "name": "Niue",
+      "area_km2": 260
+    },
+    {
+      "name": "Saint Pierre and Miquelon",
+      "area_km2": 242
+    },
+    {
+      "name": "Cook Islands",
+      "area_km2": 236
+    },
+    {
+      "name": "American Samoa",
+      "area_km2": 224
+    },
+    {
+      "name": "Marshall Islands",
+      "area_km2": 181
+    },
+    {
+      "name": "Aruba",
+      "area_km2": 180
+    },
+    {
+      "name": "Liechtenstein",
+      "area_km2": 160
+    },
+    {
+      "name": "British Virgin Islands",
+      "area_km2": 151
+    },
+    {
+      "name": "Wallis and Futuna",
+      "area_km2": 142
+    },
+    {
+      "name": "Christmas Island",
+      "area_km2": 135
+    },
+    {
+      "name": "Dhekelia",
+      "area_km2": 131
+    },
+    {
+      "name": "Akrotiri",
+      "area_km2": 123
+    },
+    {
+      "name": "Jersey",
+      "area_km2": 116
+    },
+    {
+      "name": "Montserrat",
+      "area_km2": 102
+    },
+    {
+      "name": "Anguilla",
+      "area_km2": 91
+    },
+    {
+      "name": "Guernsey",
+      "area_km2": 78
+    },
+    {
+      "name": "San Marino",
+      "area_km2": 61
+    },
+    {
+      "name": "Bermuda",
+      "area_km2": 54
+    },
+    {
+      "name": "Saint Martin",
+      "area_km2": 50
+    },
+    {
+      "name": "Pitcairn Islands",
+      "area_km2": 47
+    },
+    {
+      "name": "Norfolk Island",
+      "area_km2": 36
+    },
+    {
+      "name": "Sint Maarten",
+      "area_km2": 34
+    },
+    {
+      "name": "Macau",
+      "area_km2": 28
+    },
+    {
+      "name": "Tuvalu",
+      "area_km2": 26
+    },
+    {
+      "name": "Saint Barthelemy",
+      "area_km2": 25
+    },
+    {
+      "name": "Nauru",
+      "area_km2": 21
+    },
+    {
+      "name": "Cocos (Keeling) Islands",
+      "area_km2": 14
+    },
+    {
+      "name": "Tokelau",
+      "area_km2": 12
+    },
+    {
+      "name": "Paracel Islands",
+      "area_km2": 8
+    },
+    {
+      "name": "Gibraltar",
+      "area_km2": 7
+    },
+    {
+      "name": "Wake Island",
+      "area_km2": 7
+    },
+    {
+      "name": "Clipperton Island",
+      "area_km2": 6
+    },
+    {
+      "name": "Navassa Island",
+      "area_km2": 5
+    },
+    {
+      "name": "Spratly Islands",
+      "area_km2": 5
+    },
+    {
+      "name": "Ashmore and Cartier Islands",
+      "area_km2": 5
+    },
+    {
+      "name": "Coral Sea Islands",
+      "area_km2": 3
+    },
+    {
+      "name": "Monaco",
+      "area_km2": 2
+    }
+  ]
+}

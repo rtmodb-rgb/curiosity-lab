@@ -30,6 +30,7 @@ and from a tiny, readable code repo.
 | 01 | **The Abelian Sandpile** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/sandpile/) | ✅ shipped & verified |
 | 02 | **Rule 30: Is it random?** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/rule30/) | ✅ shipped & verified |
 | 03 | **The Hat: one shape that never repeats** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/monotile/) | ✅ shipped & verified |
+| 04 | **Benford's Law: why the digit 1 is not fair** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/benford/) | ✅ shipped & verified |
 
 ### #01 — The Abelian Sandpile
 One kindergarten rule about falling sand hides an algebraic group, a fractal "zero," and a number you can
@@ -58,6 +59,21 @@ headline number two independent ways: the substitution matrix's characteristic p
 limiting tile frequencies (which sum to 1), and the unreflected:reflected hat ratio → φ⁴. The browser code
 is a byte-for-byte copy of the Python core (a Node test enforces it), and the page is explicit that
 aperiodicity itself is **cited, not re-proved** — we check the arithmetic around it, not the topology proof.
+
+### #04 — Benford's law: why the digit 1 is not fair
+Across a huge range of real-world tables — river lengths, populations, stock prices, country areas, the
+powers of 2 — the leading digit is a **1** about **30 %** of the time and a **9** under **5 %**, following
+`P(d) = log₁₀(1 + 1/d)`. The page lets you pour eight different number sources into a live histogram and
+watch the curve appear — or refuse to. It then **proves** the law where it is provable: a sequence is Benford
+exactly when its logarithms are *equidistributed mod 1*, so **Weyl's theorem (1916)** makes `2ⁿ`, `3ⁿ` and the
+Fibonacci numbers provably Benford (checked two independent ways in code). And it is scrupulous about where
+the "law" is folklore: the primes are **not** Benford under natural density (their digit frequencies never
+settle), uniform/normal/bounded data are not Benford at all, the fit of *real* data is an **empirical**
+regularity (Pinkham 1961 scale-invariance; Hill 1995 base-invariance) rather than a theorem, and using
+first-digit tests to "detect" election fraud is **statistically unreliable**. We go one level deeper too —
+two-digit frequencies and the second-digit distribution (mean ≈ 4.187) — and every headline number is
+reproduced by `verify.py` (Python **standard library only** — no dependencies) plus a Node cross-check of the
+page's own JavaScript.
 
 ## Reproduce every number yourself
 
@@ -92,6 +108,15 @@ python3 code/monotile/verify.py
 # Run the EXACT JavaScript core shipped on the page, in Node, and prove it is
 # byte-for-byte identical to the Python core and produces identical tilings
 node code/monotile/test_core.mjs
+
+# --- Lab #04 — Benford's law ---
+# Python checks (STANDARD LIBRARY ONLY — no pip): P(d)=log10(1+1/d); 2^n, 3^n and the
+# Fibonacci numbers converge to Benford; the primes do NOT (natural density); uniform and
+# normal data are not Benford; two-digit & second-digit distributions
+python3 code/benford/verify.py
+
+# Run the EXACT JavaScript core shipped on the Benford page, in Node, vs. Python
+node code/benford/test_core.mjs
 ```
 
 Exact sandpile-group orders for the n×n grid (= number of spanning trees = det of the reduced Laplacian),
@@ -118,6 +143,8 @@ docs/                      # the live site (GitHub Pages serves from here)
   rule30/img/              #   computed hero figures
   monotile/index.html      #   experiment #03
   monotile/img/            #   computed hero figures
+  benford/index.html       #   experiment #04
+  benford/img/             #   computed hero figures
 code/sandpile/
   sandpile.py              # core model: stabilise, identity, recurrent test, exact determinant
   verify.py                # one-command reproduction of every headline claim
@@ -140,6 +167,16 @@ code/monotile/
   requirements.txt         # numpy, sympy (core) + optional shapely/matplotlib/Pillow
   facts.md                 # sourced facts, caveats and references
   LICENSE-hatviz.txt       # upstream BSD-3-Clause notice for the ported hatviz code
+code/benford/
+  benford.py               # core model: leading-digit counts, Benford targets, convergence
+  verify.py                # one-command reproduction — Python STANDARD LIBRARY ONLY
+  core.js                  # dependency-free JS core (byte-identical to the page's inlined copy)
+  figures.py               # regenerates the hero images (needs matplotlib)
+  test_core.mjs            # runs the page's own JS core under Node, vs. Python
+  explore_verify.py        # independent second-method cross-checks (high-precision; real-data contrasts)
+  country_data.js          # the 244 country areas used by the live demo (mirror of data/)
+  data/country_areas.json  # sourced country-area dataset (provenance + licence inside)
+  facts.md                 # sourced facts, caveats and references
 ```
 
 ## Why a "determinant = number of spanning trees"?
