@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Abelian Sandpile — Curiosity Lab #1</title>
+<style>
+  :root{
+    --bg:#0e1320; --panel:#161d2e; --panel2:#1d2638; --ink:#e8ecf5; --dim:#9aa6bd;
+    --line:#2a3550; --accent:#f0a249; --teal:#2d7a98; --cream:#faf1d9; --hot:#ff785a;
+    --ok:#5fd0a0; --warn:#ffd166;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;}
+  a{color:var(--accent)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 90px}
+  header{padding:56px 0 26px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .kicker{letter-spacing:.22em;text-transform:uppercase;font-size:12px;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(30px,6vw,50px);line-height:1.05;margin:.25em 0 .15em;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:18px;max-width:62ch}
+  h2{font-size:26px;margin:54px 0 8px;letter-spacing:-.01em}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:.4em}
+  h3{font-size:18px;margin:26px 0 6px;color:var(--cream)}
+  p{margin:12px 0;color:#dbe2f0}
+  .lead{font-size:18px}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+  code{background:#0c1220;border:1px solid var(--line);padding:.06em .4em;border-radius:5px;color:#ffd9a8}
+  .eq{display:block;background:#0c1220;border:1px solid var(--line);border-left:3px solid var(--accent);
+    padding:12px 16px;border-radius:8px;margin:14px 0;overflow-x:auto;color:#ffe3bb;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:18px 0}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;
+    padding:8px 13px;font-size:14px;cursor:pointer;transition:.12s;font-weight:600}
+  button:hover{border-color:var(--accent);color:#fff}
+  button.on{background:var(--accent);color:#1a1205;border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{border:none;border-radius:0;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .hint{color:var(--dim);font-size:13px;margin:8px 0 0}
+  canvas{display:block;image-rendering:pixelated;background:#0c1220;border-radius:10px;
+    border:1px solid var(--line);max-width:100%;height:auto;touch-action:none}
+  .stage{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .stage .side{flex:1;min-width:210px}
+  .stat{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .stat b{font-variant-numeric:tabular-nums;color:var(--cream)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--dim);margin-top:10px}
+  .legend i{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:5px;vertical-align:-2px;border:1px solid #0006}
+  figure{margin:18px 0}
+  figure img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#0c1220}
+  figcaption{color:var(--dim);font-size:13px;margin-top:8px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.two{grid-template-columns:1fr}}
+  .note{background:#15233a;border:1px solid #2b466e;border-left:3px solid var(--teal);border-radius:8px;padding:12px 15px;margin:14px 0}
+  .caveat{background:#2a1d12;border:1px solid #5c3d1e;border-left:3px solid var(--warn);border-radius:8px;padding:14px 16px;margin:16px 0}
+  .caveat b{color:var(--warn)}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0;font-variant-numeric:tabular-nums}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+  th{background:#0c1220;color:var(--cream)}
+  td.num{text-align:right;font-family:ui-monospace,Menlo,monospace}
+  .big{word-break:break-all;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#bfe6cf}
+  .verdict{font-weight:700}
+  .ok{color:var(--ok)} .bad{color:var(--hot)}
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--panel)}
+  summary{cursor:pointer;color:var(--cream);font-weight:600}
+  .refs{font-size:13.5px;color:var(--dim)}
+  .refs li{margin:7px 0}
+  footer{margin-top:64px;border-top:1px solid var(--line);padding-top:20px;color:var(--dim);font-size:14px}
+  .pill{display:inline-block;background:#0c1220;border:1px solid var(--line);border-radius:999px;
+    padding:3px 11px;font-size:12px;color:var(--dim);margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Curiosity Lab · No. 1</div>
+  <h1>The Abelian Sandpile</h1>
+  <p class="sub">One absurdly simple rule. A hidden algebraic group. A fractal that no one designed.
+  Drop some sand and see for yourself — every number we compute is reproduced by code you can re-run,
+  and where the science is genuinely unsettled, the page says so.</p>
+  <div style="margin-top:14px">
+    <span class="pill">interactive</span><span class="pill">verified in-browser</span><span class="pill">sourced</span>
+  </div>
+</header>
+
+<p class="lead">Pick a square grid. On each cell sits a pile of sand grains. The only rule:</p>
+<div class="eq">If a cell has <b>4 or more</b> grains, it <b>topples</b>: it gives away 4 grains, one to each of its
+four neighbours (up, down, left, right). Grains that fall off the edge are lost.</div>
+<p>Keep applying the rule until no cell has 4 grains left. That’s it. From this kindergarten rule grows
+behaviour that occupied physicists and mathematicians for nearly 40 years. Let’s build it up, one
+surprise at a time — starting with the sandbox below.</p>
+
+<!-- ===================== 1. SANDBOX ===================== -->
+<h2><span class="n">1</span>The sandbox</h2>
+<p>Click anywhere on the grid to drop sand. When a pile hits 4, it spills into its neighbours, which may
+then spill into <i>their</i> neighbours — a chain reaction called an <b>avalanche</b>. Cells glowing
+<span style="color:var(--hot)">hot</span> are mid-topple.</p>
+
+<div class="panel">
+  <div class="controls">
+    <span class="hint" style="margin:0 4px 0 0">Drop size:</span>
+    <span class="seg" id="dropSeg">
+      <button data-drop="1" class="on">+1</button>
+      <button data-drop="100">+100</button>
+      <button data-drop="1000">+1000</button>
+    </span>
+    <button id="btnCenter">Drop 2000 in the centre</button>
+    <button id="btnMax">Fill near-critical (all 3)</button>
+    <button id="btnReset">Reset</button>
+    <label class="hint" style="margin-left:6px"><input type="checkbox" id="animChk" checked> animate avalanche</label>
+  </div>
+  <div class="stage">
+    <canvas id="sandCanvas" width="127" height="127" style="width:430px"></canvas>
+    <div class="side">
+      <div class="stat"><span>Grid</span><b id="sGrid">127 × 127</b></div>
+      <div class="stat"><span>Total grains on grid</span><b id="sTotal">0</b></div>
+      <div class="stat"><span>Last avalanche — size (topples)</span><b id="sSize">0</b></div>
+      <div class="stat"><span>Last avalanche — area (cells)</span><b id="sArea">0</b></div>
+      <div class="stat"><span>Last avalanche — duration (sweeps)</span><b id="sDur">0</b></div>
+      <div class="legend">
+        <span><i style="background:#1a213a"></i>0</span>
+        <span><i style="background:#2d7a98"></i>1</span>
+        <span><i style="background:#f0a249"></i>2</span>
+        <span><i style="background:#faf1d9"></i>3</span>
+        <span><i style="background:#ff785a"></i>≥4 toppling</span>
+      </div>
+      <p class="hint">Try: drop +1000 on one spot and watch a single tall pile collapse into a square
+      crystal. Or “Fill near-critical”, then drop a single grain on the edge — sometimes nothing,
+      sometimes a system-spanning cascade. Same trigger, wildly different outcome.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 2. ABELIAN ===================== -->
+<h2><span class="n">2</span>Why “Abelian”? Order doesn’t matter</h2>
+<p>During an avalanche you often have several cells with ≥4 grains at once. Which do you topple first?
+Here’s the first surprise: <b>it doesn’t matter</b>. Whatever order you choose, you always reach the
+<i>same</i> final configuration — and even the <i>same total number of topplings</i>. Toppling here, then
+there, commutes. That is what “abelian” means.</p>
+<div class="note">This isn’t hand-waving. In our code we stabilise the same random pile four different
+ways — strict row-major order, reverse order, random order, and all-at-once — and get the identical
+grid and identical topple count (342 topplings on the test case). Determinism falls out of a
+rule that looks like it should depend on choices. <span class="hint">[Dhar 1990]</span></div>
+<p>The deep reason (Fey–Levine–Peres) is a <i>least-action principle</i>: each cell topples exactly the
+number of times it <i>must</i>, no more — a quantity called the <b>odometer</b>, fixed before you make a
+single choice.</p>
+
+<!-- ===================== 3. IDENTITY ===================== -->
+<h2><span class="n">3</span>The shape of “nothing”: the identity</h2>
+<p>The recurrent sand configurations (more on those in §4) form an algebraic <b>group</b>. Every group
+has an identity element — the “do nothing” element, the sandpile equivalent of zero. You would expect
+zero to be… an empty grid. It is not. On a square grid the identity is <b>this</b>:</p>
+<figure>
+  <img src="img/identity_512.png" alt="The sandpile identity element on a 512×512 grid — a symmetric fractal">
+  <figcaption>The <b>identity element</b> of the sandpile group on a 512×512 grid. Add this to any
+  recurrent pile and — after stabilising — nothing changes. It is the additive “zero”, yet it looks
+  like a hand-woven fractal carpet. Computed by the recipe <code>e = stabilise(2·max − stabilise(2·max))</code>
+  where <code>max</code> = every cell holding 3. [Creutz 1991; Le Borgne–Rossin 2002]</figcaption>
+</figure>
+<p>Want to watch it appear? Compute the identity live for a chosen grid size:</p>
+<div class="panel">
+  <div class="controls">
+    <span class="hint" style="margin:0 4px 0 0">Identity on n × n:</span>
+    <span class="seg" id="idSeg">
+      <button data-n="64">64</button>
+      <button data-n="128" class="on">128</button>
+      <button data-n="192">192</button>
+      <button data-n="256">256</button>
+    </span>
+    <button id="btnIdentity">Compute identity</button>
+    <span class="hint" id="idMsg"></span>
+  </div>
+  <canvas id="idCanvas" width="128" height="128" style="width:430px;margin-top:8px"></canvas>
+</div>
+
+<!-- ===================== 4. GROUP / TREES ===================== -->
+<h2><span class="n">4</span>A hidden group — and a number you can double-check two ways</h2>
+<p>Call a configuration <b>recurrent</b> if it keeps reappearing forever under random dropping
+(equivalently: it’s reachable from the fullest <i>stable</i> state — every cell at 3). These recurrent configurations form a
+finite commutative group: add two of them grain-by-grain, stabilise, and you land on a third. The
+identity of §3 is its zero.</p>
+<p>Now the beautiful part. There’s a theorem (Dhar 1990, via Kirchhoff’s 1847 Matrix–Tree theorem):</p>
+<div class="eq"># recurrent configurations  =  # spanning trees of (grid + sink)  =  det(reduced Laplacian)</div>
+<p class="hint">“Grid + sink” = the n×n grid plus one extra <i>sink</i> vertex that every boundary cell drains
+into, so every cell has degree 4. (This is a larger count than spanning trees of the <i>bare</i> grid:
+for 3×3 it is 100 352, and it equals the spanning-tree count of the (n+1)×(n+1) grid — OEIS A007341.)</p>
+<p>Three completely different ideas — <i>sandpile dynamics</i>, <i>graph theory</i>, and <i>linear
+algebra</i> — must give the <b>same integer</b>. We can test that, exactly, right here. The button below
+<b>brute-forces</b> every configuration and counts the recurrent ones (Dhar’s burning test), and
+<b>independently</b> computes the determinant. They should match to the digit.</p>
+<div class="panel">
+  <div class="controls">
+    <span class="hint" style="margin:0 4px 0 0">Verify for:</span>
+    <span class="seg" id="verSeg">
+      <button data-n="1">1×1</button>
+      <button data-n="2">2×2</button>
+      <button data-n="3" class="on">3×3</button>
+    </span>
+    <button id="btnVerify">Count recurrent &amp; compute determinant</button>
+    <span class="hint" id="verMsg"></span>
+  </div>
+  <div id="verOut" style="margin-top:6px"></div>
+</div>
+<p>The group order explodes as the grid grows (these are exact, from the determinant — verified against
+the brute-force count for n ≤ 3):</p>
+<table>
+  <tr><th>grid n×n</th><th>order of the sandpile group = # spanning trees</th></tr>
+  <tr><td>1</td><td class="num">4</td></tr>
+  <tr><td>2</td><td class="num">192</td></tr>
+  <tr><td>3</td><td class="num">100 352</td></tr>
+  <tr><td>4</td><td class="num">557 568 000</td></tr>
+  <tr><td>5</td><td class="num">32 565 539 635 200</td></tr>
+  <tr><td>6</td><td class="num">19 872 369 301 840 986 112</td></tr>
+</table>
+<details>
+  <summary>The order for a 20×20 grid is a 207-digit number (tap to reveal)</summary>
+  <p class="big">771868769433239091089639994092114636109932351369849908140560566890195224119674376688434376885576200637292320221406097981598115971326278197928402167888987269304829218867464941233248549137720632118871878270976</p>
+  <p class="hint">A 400×400 integer matrix’s determinant — equal to the number of ways to wire up a
+  20×20 grid (plus its sink) into a spanning tree, equal to the number of recurrent sand states.</p>
+</details>
+
+<!-- ===================== 5. SOC ===================== -->
+<h2><span class="n">5</span>Self-organised criticality (handle with care)</h2>
+<p>Drive the pile gently: keep dropping single grains at random spots and let each avalanche finish. The
+system isn’t tuned to anything, yet it drifts on its own toward a delicate, “critical” state where a
+single grain can trigger an avalanche of almost <i>any</i> size. This is the famous idea Bak, Tang and
+Wiesenfeld introduced in 1987 — <b>self-organised criticality (SOC)</b>.</p>
+<div class="panel">
+  <div class="controls">
+    <button id="btnDrive">▶ Drive the pile</button>
+    <button id="btnDriveReset">Reset stats</button>
+    <span class="hint" id="driveMsg">idle</span>
+  </div>
+  <div class="stage">
+    <div class="side" style="min-width:240px">
+      <canvas id="driveCanvas" width="101" height="101" style="width:280px"></canvas>
+    </div>
+    <div class="side">
+      <div class="stat"><span>Grains dropped</span><b id="dDrops">0</b></div>
+      <div class="stat"><span>Avalanches recorded</span><b id="dAval">0</b></div>
+      <div class="stat"><span>Largest avalanche so far</span><b id="dMax">0</b></div>
+      <div class="stat"><span>Mean avalanche size</span><b id="dMean">0</b></div>
+      <canvas id="histCanvas" width="300" height="200" style="width:100%;margin-top:10px"></canvas>
+      <p class="hint">Avalanche-size distribution, log–log (log-binned <i>counts</i>, not a normalised
+      density; on these axes the slope ≈ 1−τ). A straight-ish line over several decades is the
+      “scale-free” signature — but read §5’s caveat before trusting any single exponent.</p>
+    </div>
+  </div>
+</div>
+<div class="caveat">
+  <b>The honest version (this is where pop-science usually overclaims).</b> It is tempting to say “avalanche
+  sizes follow a power law.” For the <i>deterministic 2D sandpile</i> shown here, that is <b>not quite
+  true</b>:
+  <ul style="margin:8px 0 0">
+    <li>The distribution does <b>not</b> collapse under simple finite-size scaling — it shows
+      <b>multifractal</b> scaling instead (De Menech–Stella–Tebaldi 1998; Tebaldi et al. 1999).</li>
+    <li>Size, area and duration are <b>different</b> exponents, not simply related (cells topple more
+      than once, so size ≠ area).</li>
+    <li>Quoted exponents (τ<sub>s</sub> ≈ 1.2–1.35) are <b>effective and method-dependent</b>; reviews
+      need <b>two</b> exponent sets for small vs. large avalanches (Markovic–Gros 2014).</li>
+    <li>This BTW model is <b>not</b> in the same universality class as the stochastic <i>Manna</i> model,
+      which <i>does</i> scale cleanly.</li>
+  </ul>
+  <p style="margin:8px 0 0">Clean power laws live in the <i>directed</i> sandpile (Dhar–Ramaswamy 1989,
+  <i>exactly solved</i>) and in the mean-field regime above the upper critical dimension (believed to be
+  d = 4) — not in this 2D picture. So: scale-free and gorgeous, yes; “one tidy power law”, no.</p>
+</div>
+
+<!-- ===================== 6. SINGLE SOURCE ===================== -->
+<h2><span class="n">6</span>One giant pile, one fractal</h2>
+<p>Last experiment: empty grid, drop an enormous pile on a <i>single</i> centre cell, and stabilise.
+You get this:</p>
+<figure>
+  <img src="img/single_200000.png" alt="200,000 grains dropped on one cell and stabilised — a circular fractal">
+  <figcaption>200,000 grains dropped on one cell of an empty grid, then stabilised. The pile spreads into a
+  near-circular region partitioned into patches of distinct periodic textures, with sharp curved
+  boundaries.</figcaption>
+</figure>
+<p>As the number of grains → ∞ (with space rescaled), this picture has a genuine <b>scaling limit</b>
+(Pegden–Smart 2013) — but in a subtle sense: only <i>local averages</i> converge; the intricate
+microstructure never smooths out. The curved boundaries you see are explained by an
+<b>Apollonian circle packing</b> of certain integer matrices (Levine–Pegden–Smart 2016/2017). A pile of
+sand, computing an object from the theory of circle packings, with no one telling it to.</p>
+<div class="note">Why did we render “only” 200,000 grains and not a million? Because the naïve simulator
+(topple everything in parallel, repeat) needs roughly <i>O(N)</i> sweeps for a single tall pile — it
+becomes intractable fast. That practical wall is itself a hint about how much computation the rule
+quietly hides. <span class="hint">(An honest note from the lab: a first attempt at 10⁶ grains had to be
+killed.)</span></div>
+
+<!-- ===================== CLOSING ===================== -->
+<h2>What just happened</h2>
+<p>A one-line rule about sand gave us: order-independence (an abelian structure), a finite group whose
+size equals a spanning-tree count equals a determinant, a fractal “zero”, scale-free-but-multifractal
+avalanches, and a circle-packing in the continuum limit. Nothing here was designed in. It was
+<i>discovered</i> — and on this page, re-derived in front of you.</p>
+
+<details>
+  <summary>How this was made / verify it yourself</summary>
+  <p>The simulations on this page run in your browser with the exact same toppling rule used to generate
+  the figures. The figures and the brute-force checks come from a small Python module. Reproduce
+  everything (abelian property, identity, recurrent = spanning-trees for n=1,2,3, group-order growth,
+  avalanche stats):</p>
+  <div class="eq">code/sandpile/sandpile.py          ← core model
+code/sandpile/verify.py            ← run: python3 verify.py
+code/sandpile/figures.py           ← regenerates the hero images
+code/sandpile/test_shipped_js.mjs  ← runs THIS page’s JS in Node
+code/sandpile/facts.md             ← sourced facts &amp; caveats</div>
+  <p>It’s all in the open repository — clone it and re-run every number yourself:
+  <a href="https://github.com/rtmodb-rgb/curiosity-lab">github.com/rtmodb-rgb/curiosity-lab</a> →
+  <code>python3 code/sandpile/verify.py</code>.</p>
+  <p class="hint">The brute-force recurrent count (Dhar’s burning test) and the determinant agree exactly
+  for n = 1 (4), 2 (192), 3 (100352) — two independent methods, same integer.</p>
+</details>
+
+<h3>Sources</h3>
+<ul class="refs">
+  <li>P. Bak, C. Tang, K. Wiesenfeld, “Self-organized criticality: an explanation of 1/f noise,”
+    <i>Phys. Rev. Lett.</i> <b>59</b>, 381 (1987).</li>
+  <li>D. Dhar, “Self-organized critical state of sandpile automaton models,”
+    <i>Phys. Rev. Lett.</i> <b>64</b>, 1613 (1990).</li>
+  <li>D. Dhar &amp; R. Ramaswamy, “Exactly solved model of self-organized critical phenomena,”
+    <i>Phys. Rev. Lett.</i> <b>63</b>, 1659 (1989).</li>
+  <li>L. Levine &amp; J. Propp, “What is… a Sandpile?”, <i>Notices of the AMS</i> <b>57</b>(8), 976 (2010).</li>
+  <li>M. Creutz, “Abelian sandpiles,” <i>Computers in Physics</i> <b>5</b>, 198 (1991);
+    Y. Le Borgne &amp; D. Rossin, “On the identity of the sandpile group,”
+    <i>Discrete Math.</i> <b>256</b>, 775 (2002).</li>
+  <li>A. Fey, L. Levine, Y. Peres, “Growth rates and explosions in sandpiles”
+    (least-action principle), <i>J. Stat. Phys.</i> <b>138</b>, 143 (2010).</li>
+  <li>M. De Menech, A. L. Stella, C. Tebaldi, “Rare events and breakdown of simple scaling…,”
+    <i>Phys. Rev. E</i> <b>58</b>, R2677 (1998); C. Tebaldi et al., <i>Phys. Rev. Lett.</i> <b>83</b>, 3952 (1999).</li>
+  <li>B. Markovic &amp; C. Gros, “Power laws and self-organized criticality…,”
+    <i>Physics Reports</i> <b>536</b>, 41 (2014).</li>
+  <li>W. Pegden &amp; C. K. Smart, “Convergence of the Abelian sandpile,”
+    <i>Duke Math. J.</i> <b>162</b>, 627 (2013); Levine–Pegden–Smart, “Apollonian structure…,”
+    <i>GAFA</i> <b>26</b>, 306 (2016).</li>
+</ul>
+
+<footer>
+  <b>Curiosity Lab #1 — The Abelian Sandpile.</b> Built and verified autonomously.
+  Every quantity <i>we compute ourselves</i> (group orders, the abelian test, the identity, the figures)
+  is reproduced by runnable code in the open repo
+  <a href="https://github.com/rtmodb-rgb/curiosity-lab">github.com/rtmodb-rgb/curiosity-lab</a>; results we
+  take from the literature (SOC exponents, the scaling limit) are cited and flagged as contested. Facts
+  sourced in <code>code/sandpile/facts.md</code>. Math independently red-teamed before publishing. · 2026-06-15
+</footer>
+
+</div>
+
+<script>
+/* ============================ palette ============================ */
+const PAL = [[26,32,58],[45,122,152],[240,162,73],[250,241,217]];
+const HOT = [255,120,90];
+function colorFor(v){ return v>=4 ? HOT : PAL[v]; }
+
+/* ============================ sandpile core ============================ */
+function makeGrid(n){ return new Int32Array(n*n); }
+
+// one parallel toppling sweep; mutates h, marks toppled; returns topple count this sweep
+function sweep(h, n, toppledMask){
+  const t = new Int32Array(n*n);
+  let count = 0;
+  for(let k=0;k<n*n;k++){ const tk=h[k]>>2; if(tk){ t[k]=tk; count+=tk; } }
+  if(count===0) return 0;
+  for(let i=0;i<n;i++){
+    const row=i*n;
+    for(let j=0;j<n;j++){
+      const k=row+j, tk=t[k];
+      if(tk){
+        if(toppledMask) toppledMask[k]=1;
+        h[k]-=4*tk;
+        if(i>0)    h[k-n]+=tk;
+        if(i<n-1)  h[k+n]+=tk;
+        if(j>0)    h[k-1]+=tk;
+        if(j<n-1)  h[k+1]+=tk;
+      }
+    }
+  }
+  return count;
+}
+
+// stabilise fully (instant). returns {size, area, dur}
+function stabilize(h, n){
+  const mask = new Uint8Array(n*n);
+  let size=0, dur=0, c;
+  while((c=sweep(h,n,mask))>0){ size+=c; dur++; }
+  let area=0; for(let k=0;k<mask.length;k++) area+=mask[k];
+  return {size, area, dur};
+}
+
+/* ============================ renderer ============================ */
+function render(ctx, img, h){
+  const d=img.data;
+  for(let k=0;k<h.length;k++){
+    const v=h[k]; const c = v>=4?HOT:(v<0?PAL[0]:PAL[v]);
+    const o=k*4; d[o]=c[0]; d[o+1]=c[1]; d[o+2]=c[2]; d[o+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+
+/* ============================ 1. SANDBOX ============================ */
+(function(){
+  const n=127;
+  const cv=document.getElementById('sandCanvas');
+  const ctx=cv.getContext('2d');
+  const img=ctx.createImageData(n,n);
+  let h=makeGrid(n);
+  let drop=1, animating=false;
+
+  const elTotal=document.getElementById('sTotal'),
+        elSize=document.getElementById('sSize'),
+        elArea=document.getElementById('sArea'),
+        elDur=document.getElementById('sDur');
+
+  function total(){ let s=0; for(let k=0;k<h.length;k++) s+=h[k]; return s; }
+  function paint(){ render(ctx,img,h); }
+  function setStats(o){ elTotal.textContent=total().toLocaleString();
+    if(o){ elSize.textContent=o.size.toLocaleString(); elArea.textContent=o.area.toLocaleString();
+           elDur.textContent=o.dur.toLocaleString(); } }
+  paint(); setStats();
+
+  function settleInstant(){ const o=stabilize(h,n); paint(); setStats(o); }
+
+  function settleAnimated(){
+    if(animating) return;
+    animating=true;
+    const mask=new Uint8Array(n*n); let size=0, dur=0;
+    function frame(){
+      // a few sweeps per frame for speed
+      let did=0;
+      for(let s=0;s<2;s++){ const c=sweep(h,n,mask); if(c>0){ size+=c; dur++; did+=c; } }
+      paint();
+      if(did>0){ requestAnimationFrame(frame); }
+      else { let area=0; for(let k=0;k<mask.length;k++) area+=mask[k];
+             setStats({size,area,dur}); animating=false; }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function addAt(i,j,amount){
+    if(i<0||j<0||i>=n||j>=n) return;
+    h[i*n+j]+=amount;
+    if(animating){ return; }
+    if(document.getElementById('animChk').checked) settleAnimated(); else settleInstant();
+  }
+
+  function evtCell(e){
+    const r=cv.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    const j=Math.floor(x/r.width*n), i=Math.floor(y/r.height*n);
+    addAt(i,j,drop);
+  }
+  cv.addEventListener('click',evtCell);
+  cv.addEventListener('touchstart',function(e){e.preventDefault();evtCell(e);},{passive:false});
+
+  document.querySelectorAll('#dropSeg button').forEach(b=>{
+    b.onclick=()=>{ document.querySelectorAll('#dropSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); drop=+b.dataset.drop; };
+  });
+  document.getElementById('btnCenter').onclick=()=>addAt((n>>1),(n>>1),2000);
+  document.getElementById('btnMax').onclick=()=>{ for(let k=0;k<h.length;k++) h[k]=3; paint(); setStats(); };
+  document.getElementById('btnReset').onclick=()=>{ h=makeGrid(n); paint(); setStats({size:0,area:0,dur:0}); };
+})();
+
+/* ============================ 3. IDENTITY ============================ */
+(function(){
+  let n=128;
+  const cv=document.getElementById('idCanvas');
+  const ctx=cv.getContext('2d');
+  const msg=document.getElementById('idMsg');
+
+  function identity(n){
+    const six=makeGrid(n); six.fill(6);
+    const a=Int32Array.from(six); stabilize(a,n);
+    const diff=makeGrid(n); for(let k=0;k<n*n;k++) diff[k]=six[k]-a[k];
+    stabilize(diff,n);
+    return diff;
+  }
+  function compute(){
+    cv.width=n; cv.height=n;
+    const ctx2=cv.getContext('2d'); const img=ctx2.createImageData(n,n);
+    msg.textContent='computing…';
+    setTimeout(()=>{ const t=performance.now(); const e=identity(n);
+      render(ctx2,img,e); msg.textContent=`done (${(performance.now()-t).toFixed(0)} ms, n=${n})`; },20);
+  }
+  document.querySelectorAll('#idSeg button').forEach(b=>{
+    b.onclick=()=>{ document.querySelectorAll('#idSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); n=+b.dataset.n; };
+  });
+  document.getElementById('btnIdentity').onclick=compute;
+})();
+
+/* ============================ 4. VERIFY: recurrent = spanning trees ============================ */
+(function(){
+  let n=3;
+  const out=document.getElementById('verOut');
+  const msg=document.getElementById('verMsg');
+
+  // sink vector b(v) = number of edges to sink
+  function sinkVec(n){ const b=makeGrid(n);
+    for(let j=0;j<n;j++){ b[j]+=1; b[(n-1)*n+j]+=1; }
+    for(let i=0;i<n;i++){ b[i*n]+=1; b[i*n+n-1]+=1; } return b; }
+
+  function isRecurrent(c,n,b){
+    const a=Int32Array.from(c); for(let k=0;k<n*n;k++) a[k]+=b[k];
+    stabilize(a,n);
+    for(let k=0;k<n*n;k++) if(a[k]!==c[k]) return false;
+    return true;
+  }
+  function countRecurrent(n){
+    const cells=n*n, b=sinkVec(n); let cnt=0n;
+    const total=Math.pow(4,cells), c=makeGrid(n);
+    for(let code=0;code<total;code++){
+      let x=code; for(let k=0;k<cells;k++){ c[k]=x&3; x>>=2; }
+      if(isRecurrent(c,n,b)) cnt++;
+    }
+    return cnt;
+  }
+  // reduced Laplacian (n*n) as BigInt matrix
+  function reducedLaplacian(n){
+    const N=n*n, M=Array.from({length:N},()=>new Array(N).fill(0n));
+    const idx=(i,j)=>i*n+j;
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++){ const v=idx(i,j); M[v][v]=4n;
+      [[-1,0],[1,0],[0,-1],[0,1]].forEach(([di,dj])=>{ const a=i+di,b=j+dj;
+        if(a>=0&&a<n&&b>=0&&b<n) M[v][idx(a,b)]-=1n; }); }
+    return M;
+  }
+  // Bareiss fraction-free determinant (exact, BigInt)
+  function detBareiss(M){
+    const n=M.length; let prev=1n, sign=1n;
+    for(let k=0;k<n-1;k++){
+      if(M[k][k]===0n){ let s=-1; for(let i=k+1;i<n;i++) if(M[i][k]!==0n){s=i;break;}
+        if(s<0) return 0n; const tmp=M[k];M[k]=M[s];M[s]=tmp; sign=-sign; }
+      for(let i=k+1;i<n;i++) for(let j=k+1;j<n;j++)
+        M[i][j]=(M[i][j]*M[k][k]-M[i][k]*M[k][j])/prev;
+      prev=M[k][k];
+    }
+    return sign*M[n-1][n-1];
+  }
+
+  function run(){
+    msg.textContent='working…';
+    setTimeout(()=>{
+      const t0=performance.now();
+      const det=detBareiss(reducedLaplacian(n));
+      const t1=performance.now();
+      const bf=countRecurrent(n);
+      const t2=performance.now();
+      const match = (det===bf);
+      out.innerHTML =
+        `<div class="stat"><span>Brute-force recurrent count (Dhar burning test, ${Math.pow(4,n*n).toLocaleString()} configs checked)</span><b>${bf.toString()}</b></div>`+
+        `<div class="stat"><span>det(reduced Laplacian) = # spanning trees (Matrix–Tree)</span><b>${det.toString()}</b></div>`+
+        `<div class="stat"><span>Agree?</span><b class="${match?'ok':'bad'}">${match?'✓ identical':'✗ MISMATCH'}</b></div>`+
+        `<p class="hint">determinant ${(t1-t0).toFixed(0)} ms · brute force ${(t2-t1).toFixed(0)} ms</p>`;
+      msg.textContent='';
+    },20);
+  }
+  document.querySelectorAll('#verSeg button').forEach(b=>{
+    b.onclick=()=>{ document.querySelectorAll('#verSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); n=+b.dataset.n; };
+  });
+  document.getElementById('btnVerify').onclick=run;
+})();
+
+/* ============================ 5. SOC DRIVE + HISTOGRAM ============================ */
+(function(){
+  const n=101;
+  const cv=document.getElementById('driveCanvas'), ctx=cv.getContext('2d');
+  const img=ctx.createImageData(n,n);
+  const hist=document.getElementById('histCanvas'), hctx=hist.getContext('2d');
+  let h=makeGrid(n), running=false, raf=null;
+  let drops=0, sizes=[], maxS=0, sumS=0, nAval=0;
+  const LOGBINS=24; let bins=new Array(LOGBINS).fill(0);
+
+  const elDrops=document.getElementById('dDrops'), elAval=document.getElementById('dAval'),
+        elMax=document.getElementById('dMax'), elMean=document.getElementById('dMean'),
+        msg=document.getElementById('driveMsg');
+
+  function record(s){
+    drops++;
+    if(s>0){ nAval++; sumS+=s; if(s>maxS)maxS=s;
+      const b=Math.min(LOGBINS-1, Math.floor(Math.log10(s)*4)); bins[b]++; }
+  }
+  function drawHist(){
+    const W=hist.width,H=hist.height; hctx.clearRect(0,0,W,H);
+    hctx.fillStyle='#0c1220'; hctx.fillRect(0,0,W,H);
+    // axes
+    hctx.strokeStyle='#2a3550'; hctx.lineWidth=1;
+    hctx.beginPath(); hctx.moveTo(34,8); hctx.lineTo(34,H-22); hctx.lineTo(W-8,H-22); hctx.stroke();
+    hctx.fillStyle='#9aa6bd'; hctx.font='10px monospace';
+    hctx.fillText('log₁₀ count',2,12);
+    hctx.fillText('log₁₀ avalanche size',W-128,H-6);
+    let maxLog=0; const pts=[];
+    for(let b=0;b<LOGBINS;b++) if(bins[b]>0){ const lc=Math.log10(bins[b]); if(lc>maxLog)maxLog=lc;
+      pts.push([b/4, lc]); }
+    if(pts.length<2){ hctx.fillStyle='#9aa6bd'; hctx.fillText('drive to collect data…',60,H/2); return; }
+    const maxX=Math.max(...pts.map(p=>p[0]))||1;
+    const x0=34,x1=W-10,y0=H-22,y1=10;
+    const sx=v=>x0+(v/maxX)*(x1-x0), sy=v=>y0-(v/(maxLog||1))*(y0-y1);
+    hctx.strokeStyle='#f0a249'; hctx.fillStyle='#f0a249'; hctx.lineWidth=1.5;
+    hctx.beginPath();
+    pts.forEach((p,i)=>{ const X=sx(p[0]),Y=sy(p[1]); if(i)hctx.lineTo(X,Y); else hctx.moveTo(X,Y); });
+    hctx.stroke();
+    pts.forEach(p=>{ hctx.beginPath(); hctx.arc(sx(p[0]),sy(p[1]),2.4,0,7); hctx.fill(); });
+  }
+  function paint(){ render(ctx,img,h); }
+  function stats(){ elDrops.textContent=drops.toLocaleString(); elAval.textContent=nAval.toLocaleString();
+    elMax.textContent=maxS.toLocaleString(); elMean.textContent=(nAval?sumS/nAval:0).toFixed(1); }
+
+  function step(){
+    // batch several drops per frame
+    for(let b=0;b<40;b++){
+      const i=(Math.random()*n)|0, j=(Math.random()*n)|0;
+      h[i*n+j]+=1;
+      const o=stabilize(h,n);
+      record(o.size);
+    }
+    paint(); drawHist(); stats();
+    if(running) raf=requestAnimationFrame(step);
+  }
+  function toggle(){
+    running=!running;
+    const btn=document.getElementById('btnDrive');
+    if(running){ btn.textContent='❚❚ Pause'; btn.classList.add('on'); msg.textContent='driving…'; step(); }
+    else { btn.textContent='▶ Drive the pile'; btn.classList.remove('on'); msg.textContent='paused';
+      if(raf)cancelAnimationFrame(raf); }
+  }
+  function reset(){
+    running=false; if(raf)cancelAnimationFrame(raf);
+    h=makeGrid(n); drops=0; sizes=[]; maxS=0; sumS=0; nAval=0; bins=new Array(LOGBINS).fill(0);
+    const btn=document.getElementById('btnDrive'); btn.textContent='▶ Drive the pile'; btn.classList.remove('on');
+    msg.textContent='idle'; paint(); drawHist(); stats();
+  }
+  paint(); drawHist(); stats();
+  document.getElementById('btnDrive').onclick=toggle;
+  document.getElementById('btnDriveReset').onclick=reset;
+})();
+</script>
+</body>
+</html>
