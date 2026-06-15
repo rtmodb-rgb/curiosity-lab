@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The 3n+1 problem (Collatz): a rule too simple to solve &middot; Curiosity Lab #5</title>
+<meta name="description" content="An interactive, verified explorable on the Collatz / 3n+1 conjecture. Plot hailstone trajectories, find the record-setting stubborn numbers (27 reaches 1 in 111 steps; 837,799 takes 524 and peaks near 2.97 billion), watch Terras's parity-vector bijection turn the chaos into an exact skeleton, see why almost every number falls, and why the cousins 3n-1 and 5n+1 cycle or diverge. Proven-by-code vs cited vs open, flagged; 31 checks + 23 cross-checks.">
+<style>
+/* ============================================================================
+   Curiosity Lab — design tokens
+   Single source of truth for color, type, spacing, radius, shadow, motion.
+   Self-contained: no @import, no remote fonts, no build step.
+
+   Themes
+   ------
+   • Default (:root)                  → LIGHT  (warm paper)
+   • @media (prefers-color-scheme:dark) → DARK  (the established brand)
+   • Authors may PIN a theme with  <html data-theme="dark">  or  "light".
+     The data-theme rules win over the media query.
+
+   The dark values are the exact brand palette from Lab #1 (sandpile) — this is
+   an evolution, not a repaint. Light is a new, contrast-checked companion.
+   All text tokens meet WCAG AA (≥4.5:1) on their intended surfaces; most clear
+   AAA. The raw amber --c-amber is a NON-TEXT accent (fills, borders, dataviz);
+   use --c-link / --c-accent-ink for text on light.
+   ============================================================================ */
+
+:root{
+  color-scheme: light dark;
+
+  /* ---- Type families (system stacks — zero network) ---------------------- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+               "Liberation Mono", monospace;
+
+  /* ---- Fluid type scale (16px base; headings clamp for mobile-first) ----- */
+  --text-2xs: .6875rem;   /* 11px — micro labels      */
+  --text-xs:  .75rem;     /* 12px — kicker, tags      */
+  --text-sm:  .8125rem;   /* 13px — hints, captions   */
+  --text-md:  .875rem;    /* 14px — controls, footer  */
+  --text-base:1rem;       /* 16px — body              */
+  --text-lg:  1.125rem;   /* 18px — lead / subtitle   */
+  --text-xl:  clamp(1.25rem, 1.05rem + 1vw, 1.625rem);  /* h2  ~20→26 */
+  --text-2xl: clamp(1.875rem, 1.3rem + 2.6vw, 3.25rem); /* h1  ~30→52 */
+
+  --leading-tight: 1.12;
+  --leading-snug:  1.3;
+  --leading-body:  1.65;   /* readable measure rhythm */
+
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-bold:   700;
+  --weight-black:  800;
+
+  --tracking-kicker: .22em;
+  --tracking-tight: -.01em;
+
+  --measure: 65ch;         /* readable line length cap */
+
+  /* ---- Spacing rhythm (4px base grid) ------------------------------------ */
+  --space-0: 0;
+  --space-1: .25rem;   /* 4  */
+  --space-2: .5rem;    /* 8  */
+  --space-3: .75rem;   /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.25rem;  /* 20 */
+  --space-6: 1.5rem;   /* 24 */
+  --space-8: 2rem;     /* 32 */
+  --space-10: 2.75rem; /* 44 */
+  --space-12: 3.5rem;  /* 56 */
+  --space-16: 4.5rem;  /* 72 */
+
+  --container: 880px;  /* page max-width (matches umbrella landing) */
+  --container-narrow: 720px;
+
+  /* ---- Radius ------------------------------------------------------------ */
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Control geometry -------------------------------------------------- */
+  --control-h: 2.5rem;     /* 40px — comfortable tap target */
+  --tap-min: 44px;         /* WCAG 2.5.5 target floor       */
+  --border: 1px;
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(.2,.6,.3,1);
+  --dur-fast: .12s;
+  --dur: .18s;
+  --dur-slow: .32s;
+
+  /* ===================== LIGHT theme (default) ===================== */
+  /* surfaces */
+  --c-bg:        #f7f4ee;   /* warm paper                     */
+  --c-bg-grad-a: #fbf6ea;   /* subtle radial wash (optional)  */
+  --c-bg-grad-b: #f1eee6;
+  --c-surface:   #ffffff;   /* raised card / panel            */
+  --c-surface-2: #f1ece1;   /* recessed / segmented controls  */
+  --c-inset:     #f3eee2;   /* code / eq / table heads        */
+  --c-line:      #e2dccc;   /* hairline borders               */
+  --c-line-strong:#d3ccba;
+
+  /* text */
+  --c-ink:    #19202f;      /* headings / strong  14.8:1      */
+  --c-body:   #2b3344;      /* body copy          11.5:1      */
+  --c-dim:    #586274;      /* secondary / hints   5.6:1      */
+  --c-on-accent:#2b1c08;    /* text on amber fill  7.8:1      */
+
+  /* brand accents */
+  --c-amber:     #f0a249;   /* NON-TEXT: fills, borders, dataviz */
+  --c-amber-soft:#f7d8a8;
+  --c-link:      #9a5410;   /* links / accent text 5.2:1      */
+  --c-link-hover:#7d420a;
+  --c-teal:      #2d7a98;   /* NON-TEXT accent / borders      */
+  --c-teal-ink:  #1d5d73;   /* teal text          6.7:1       */
+  --c-cream:     #8a5a10;   /* "cream" role → warm strong text on light */
+
+  /* state */
+  --c-ok:      #1c7a52;     /* 4.8:1  */
+  --c-warn-ink:#8a5a10;     /* caveat text/heading 5.4:1 */
+  --c-warn-edge:#d9a441;    /* caveat left border / accent */
+  --c-warn-bg: #fbf2dd;     /* caveat fill */
+  --c-info-edge:#2d7a98;    /* note left border */
+  --c-info-bg: #ecf3f6;     /* note fill */
+  --c-hot:     #c0392b;     /* alert / "bad" text 4.9:1 */
+
+  /* code on inset */
+  --c-code-ink:#8a3d00;
+
+  /* focus + selection */
+  --c-focus:   #1d5d73;     /* visible focus ring */
+  --c-focus-halo: rgba(29,93,115,.28);
+  --c-select-bg: #f7d8a8;
+  --c-select-fg: #19202f;
+
+  /* shadows (soft on paper) */
+  --shadow-sm: 0 1px 2px rgba(25,32,47,.06);
+  --shadow-md: 0 4px 14px rgba(25,32,47,.08);
+  --shadow-lg: 0 12px 32px rgba(25,32,47,.12);
+
+  /* dataviz ramp (sand heights 0..3 + hot) — identical hues both themes */
+  --viz-0: #c9d2e4;  /* low (light needs a visible "empty") */
+  --viz-1: #2d7a98;
+  --viz-2: #f0a249;
+  --viz-3: #b9892f;  /* "cream" reads as bright on dark; darken for light */
+  --viz-hot:#ff785a;
+  --viz-axis: #b6ad99;
+  --viz-line: #9a5410;
+}
+
+/* ===================== DARK theme — the established brand ===================== */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-bg:        #0e1320;
+    --c-bg-grad-a: #16223b;
+    --c-bg-grad-b: #1a1c33;
+    --c-surface:   #161d2e;
+    --c-surface-2: #1d2638;
+    --c-inset:     #0c1220;
+    --c-line:      #2a3550;
+    --c-line-strong:#3a4a6e;
+
+    --c-ink:    #e8ecf5;   /* 15.7:1 */
+    --c-body:   #dbe2f0;   /* 14.3:1 */
+    --c-dim:    #9aa6bd;   /*  7.6:1 */
+    --c-on-accent:#1a1205; /*  8.8:1 on amber */
+
+    --c-amber:     #f0a249;
+    --c-amber-soft:#5a3d1a;
+    --c-link:      #f0a249; /* 8.8:1 on bg */
+    --c-link-hover:#ffc07a;
+    --c-teal:      #2d7a98;
+    --c-teal-ink:  #6fb6d0; /* lighter teal reads as text on dark */
+    --c-cream:     #faf1d9; /* 16.5:1 */
+
+    --c-ok:      #5fd0a0;   /* 9.7:1 */
+    --c-warn-ink:#ffd166;   /* 12.9:1 */
+    --c-warn-edge:#ffd166;
+    --c-warn-bg: #2a1d12;
+    --c-info-edge:#2d7a98;
+    --c-info-bg: #15233a;
+    --c-hot:     #ff785a;   /* 7.1:1 */
+
+    --c-code-ink:#ffd9a8;
+
+    --c-focus:   #ffc985;
+    --c-focus-halo: rgba(240,162,73,.35);
+    --c-select-bg: #2d7a98;
+    --c-select-fg: #ffffff;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+    --shadow-lg: 0 14px 38px rgba(0,0,0,.55);
+
+    --viz-0: #1a213a;
+    --viz-1: #2d7a98;
+    --viz-2: #f0a249;
+    --viz-3: #faf1d9;
+    --viz-hot:#ff785a;
+    --viz-axis: #2a3550;
+    --viz-line: #f0a249;
+  }
+}
+
+/* ===================== Author-pinned themes ===================== */
+/* <html data-theme="dark"> forces dark regardless of OS preference. */
+:root[data-theme="dark"]{
+  --c-bg:#0e1320; --c-bg-grad-a:#16223b; --c-bg-grad-b:#1a1c33;
+  --c-surface:#161d2e; --c-surface-2:#1d2638; --c-inset:#0c1220;
+  --c-line:#2a3550; --c-line-strong:#3a4a6e;
+  --c-ink:#e8ecf5; --c-body:#dbe2f0; --c-dim:#9aa6bd; --c-on-accent:#1a1205;
+  --c-amber:#f0a249; --c-amber-soft:#5a3d1a; --c-link:#f0a249; --c-link-hover:#ffc07a;
+  --c-teal:#2d7a98; --c-teal-ink:#6fb6d0; --c-cream:#faf1d9;
+  --c-ok:#5fd0a0; --c-warn-ink:#ffd166; --c-warn-edge:#ffd166; --c-warn-bg:#2a1d12;
+  --c-info-edge:#2d7a98; --c-info-bg:#15233a; --c-hot:#ff785a; --c-code-ink:#ffd9a8;
+  --c-focus:#ffc985; --c-focus-halo:rgba(240,162,73,.35);
+  --c-select-bg:#2d7a98; --c-select-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 8px 24px rgba(0,0,0,.45);
+  --shadow-lg:0 14px 38px rgba(0,0,0,.55);
+  --viz-0:#1a213a; --viz-1:#2d7a98; --viz-2:#f0a249; --viz-3:#faf1d9;
+  --viz-hot:#ff785a; --viz-axis:#2a3550; --viz-line:#f0a249;
+}
+/* data-theme="light" simply keeps the :root defaults; declared for symmetry. */
+:root[data-theme="light"]{ color-scheme: light; }
+:root[data-theme="dark"]{ color-scheme: dark; }
+/* ============================================================================
+   Curiosity Lab — component layer
+   Requires tokens.css (loaded first). Self-contained: no external assets.
+   All components are namespaced `cl-` so this file is droppable into any
+   explorable without clobbering page-specific styles.
+
+   Load order:
+     <link rel="stylesheet" href="tokens.css">
+     <link rel="stylesheet" href="components.css">
+   ============================================================================ */
+
+/* ------------------------------------------------------------------ reset-lite */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+::selection{ background:var(--c-select-bg); color:var(--c-select-fg); }
+
+/* ------------------------------------------------------------------- page shell */
+.cl-body{
+  margin:0;
+  background:var(--c-bg);
+  color:var(--c-body);
+  font-family:var(--font-sans);
+  font-size:var(--text-base);
+  line-height:var(--leading-body);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+/* optional ambient wash — calm, never busy. Drop class `cl-body--wash`. */
+.cl-body--wash{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, var(--c-bg-grad-a) 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, var(--c-bg-grad-b) 0%, transparent 55%),
+    var(--c-bg);
+  background-attachment:fixed;
+}
+.cl-wrap{ max-width:var(--container); margin:0 auto; padding:0 var(--space-5) var(--space-16); }
+.cl-wrap--narrow{ max-width:var(--container-narrow); }
+
+/* ----------------------------------------------------------------------- links */
+.cl-body a,a.cl-link{ color:var(--c-link); text-decoration:none;
+  text-underline-offset:.14em; text-decoration-thickness:from-font; }
+.cl-body a:hover,a.cl-link:hover{ color:var(--c-link-hover); text-decoration:underline; }
+
+/* ------------------------------------------------------------- focus (global) */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--c-focus);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+/* mouse users don't get the ring; keyboard users always do */
+
+/* --------------------------------------------------------------- typography */
+.cl-kicker{
+  display:inline-block;
+  letter-spacing:var(--tracking-kicker); text-transform:uppercase;
+  font-size:var(--text-xs); font-weight:var(--weight-bold); color:var(--c-link);
+}
+.cl-title{ font-size:var(--text-2xl); line-height:var(--leading-tight);
+  letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:.18em 0 .14em; font-weight:var(--weight-black); }
+.cl-subtitle{ color:var(--c-dim); font-size:var(--text-lg); max-width:var(--measure); margin:0; }
+.cl-h2{ font-size:var(--text-xl); letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:var(--space-12) 0 var(--space-2); font-weight:var(--weight-bold); }
+.cl-h3{ font-size:var(--text-lg); color:var(--c-cream); margin:var(--space-6) 0 var(--space-1);
+  font-weight:var(--weight-bold); }
+.cl-h2 .cl-section-num{ color:var(--c-link); font-variant-numeric:tabular-nums; margin-right:.4em; }
+.cl-lead{ font-size:var(--text-lg); color:var(--c-body); }
+.cl-prose{ max-width:var(--measure); }
+.cl-prose p{ margin:var(--space-3) 0; color:var(--c-body); }
+
+/* ----------------------------------------------------------------- header/footer */
+.cl-header{ padding:var(--space-16) 0 var(--space-6); }
+.cl-header--ruled{ border-bottom:var(--border) solid var(--c-line); margin-bottom:var(--space-2); }
+.cl-footer{ margin-top:var(--space-16); border-top:var(--border) solid var(--c-line);
+  padding-top:var(--space-5); color:var(--c-dim); font-size:var(--text-md); }
+.cl-footer b{ color:var(--c-ink); }
+
+/* --------------------------------------------------------------------- pills */
+.cl-pill{ display:inline-block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-pill); padding:3px 11px; font-size:var(--text-xs);
+  color:var(--c-dim); margin:0 6px 6px 0; }
+.cl-pill b{ color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* ----------------------------------------------------------- tags (status) */
+.cl-tag{ font-size:var(--text-2xs); letter-spacing:.12em; text-transform:uppercase;
+  font-weight:var(--weight-bold); border-radius:var(--radius-pill); padding:3px 9px;
+  border:var(--border) solid var(--c-line); color:var(--c-dim); }
+.cl-tag--live{ color:var(--c-ok); border-color:color-mix(in srgb,var(--c-ok) 45%,transparent);
+  background:color-mix(in srgb,var(--c-ok) 12%,transparent); }
+.cl-tag--soon{ color:var(--c-dim); }
+
+/* ----------------------------------------------------------------- panels */
+.cl-panel{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-5); margin:var(--space-5) 0;
+  box-shadow:var(--shadow-sm); }
+
+/* ---------------------------------------------------------------- cards (index) */
+.cl-card-grid{ display:grid; grid-template-columns:1fr; gap:var(--space-5); margin:var(--space-5) 0; }
+.cl-card{ display:block; background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-xl); overflow:hidden; color:inherit; box-shadow:var(--shadow-sm);
+  transition:transform var(--dur) var(--ease), border-color var(--dur) var(--ease),
+             box-shadow var(--dur) var(--ease); }
+.cl-card__strip{ height:8px;
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber),var(--c-amber-soft)); }
+.cl-card__body{ padding:var(--space-5) var(--space-6); }
+.cl-card__row{ display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-1); }
+.cl-card__no{ font-variant-numeric:tabular-nums; color:var(--c-link);
+  font-weight:var(--weight-black); font-size:var(--text-md); letter-spacing:.08em; }
+.cl-card__title{ margin:2px 0 6px; font-size:var(--text-xl); letter-spacing:var(--tracking-tight);
+  color:var(--c-ink); font-weight:var(--weight-bold); }
+.cl-card p{ margin:0; color:var(--c-dim); font-size:var(--text-md); }
+.cl-card__cta{ margin-top:var(--space-3); color:var(--c-link); font-weight:var(--weight-bold);
+  font-size:var(--text-md); }
+a.cl-card:hover{ border-color:var(--c-amber); transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.cl-card--soon{ opacity:.72; }
+.cl-card--soon:hover{ border-color:var(--c-line); transform:none; box-shadow:var(--shadow-sm); }
+
+/* --------------------------------------------------- "house rules" mini-grid */
+.cl-rules{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin:var(--space-5) 0; }
+.cl-rule{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-4); }
+.cl-rule h3{ margin:0 0 4px; font-size:var(--text-md); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-rule p{ margin:0; font-size:var(--text-md); color:var(--c-dim); }
+@media(max-width:620px){ .cl-rules{ grid-template-columns:1fr; } }
+
+/* ===================================================================== CALLOUTS
+   Two semantic boxes that carry the Lab's honesty contract.
+   .cl-note    — neutral aside / context (teal).
+   .cl-caveat  — uncertainty / "what we did NOT verify" (amber). NEVER hide it.
+   Visual polish must never bury a caveat: it gets its own strong edge + label.
+   =========================================================================== */
+.cl-note{ background:var(--c-info-bg); border:var(--border) solid var(--c-info-edge);
+  border-left:3px solid var(--c-info-edge); border-radius:var(--radius-md);
+  padding:var(--space-3) var(--space-4); margin:var(--space-4) 0; color:var(--c-body); }
+
+.cl-caveat{ background:var(--c-warn-bg); border:var(--border) solid var(--c-warn-edge);
+  border-left:4px solid var(--c-warn-edge); border-radius:var(--radius-md);
+  padding:var(--space-4); margin:var(--space-5) 0; color:var(--c-body); }
+.cl-caveat > b:first-child,.cl-caveat .cl-caveat__label{ color:var(--c-warn-ink); }
+.cl-caveat__label{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  color:var(--c-warn-ink); margin:0 0 var(--space-1); }
+/* a small ⚠ glyph rendered from CSS so no icon font is needed */
+.cl-caveat__label::before{ content:"⚠"; font-size:1.05em; line-height:1; }
+.cl-caveat ul{ margin:var(--space-2) 0 0; padding-left:1.25em; }
+.cl-caveat li{ margin:.3em 0; }
+
+/* ===================================================================== CONTROLS */
+.cl-controls{ display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; margin:var(--space-2) 0 var(--space-1); }
+
+.cl-btn{ background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:0 var(--space-3); min-height:var(--control-h);
+  font:var(--weight-medium) var(--text-md)/1 var(--font-sans); cursor:pointer;
+  display:inline-flex; align-items:center; gap:.4em;
+  transition:border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+             background var(--dur-fast) var(--ease); }
+.cl-btn:hover{ border-color:var(--c-amber); color:var(--c-ink); }
+.cl-btn.is-on,.cl-btn[aria-pressed="true"]{ background:var(--c-amber); color:var(--c-on-accent);
+  border-color:var(--c-amber); }
+.cl-btn:disabled,.cl-btn[aria-disabled="true"]{ opacity:.45; cursor:not-allowed; }
+
+/* segmented control */
+.cl-seg{ display:inline-flex; border:var(--border) solid var(--c-line); border-radius:var(--radius-md);
+  overflow:hidden; }
+.cl-seg .cl-btn{ border:none; border-radius:0; border-right:var(--border) solid var(--c-line); }
+.cl-seg .cl-btn:last-child{ border-right:none; }
+
+.cl-hint{ color:var(--c-dim); font-size:var(--text-sm); margin:var(--space-2) 0 0; }
+
+/* slider + label control --------------------------------------------------- */
+.cl-control{ display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; margin:var(--space-2) 0; }
+.cl-control__label{ font-size:var(--text-md); color:var(--c-dim); font-weight:var(--weight-medium);
+  min-width:7ch; }
+.cl-control__value{ font-variant-numeric:tabular-nums; color:var(--c-cream);
+  font-weight:var(--weight-bold); font-size:var(--text-md); min-width:5ch; text-align:right; }
+.cl-range{ -webkit-appearance:none; appearance:none; width:100%; max-width:18rem; height:var(--tap-min);
+  background:transparent; cursor:pointer; }
+/* track */
+.cl-range::-webkit-slider-runnable-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+.cl-range::-moz-range-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+/* thumb */
+.cl-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:20px; height:20px;
+  margin-top:-7px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range::-moz-range-thumb{ width:20px; height:20px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range:focus-visible{ outline:none; }
+.cl-range:focus-visible::-webkit-slider-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+.cl-range:focus-visible::-moz-range-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+
+/* checkbox label inline */
+.cl-check{ display:inline-flex; align-items:center; gap:.5em; color:var(--c-dim);
+  font-size:var(--text-sm); min-height:var(--tap-min); }
+.cl-check input{ accent-color:var(--c-amber); width:1.05em; height:1.05em; }
+
+/* ===================================================================== STAGE */
+.cl-stage{ display:flex; gap:var(--space-5); flex-wrap:wrap; align-items:flex-start; }
+.cl-stage__side{ flex:1; min-width:210px; }
+
+/* stat readout rows */
+.cl-stat{ display:flex; justify-content:space-between; gap:var(--space-3); padding:6px 0;
+  border-bottom:1px dashed var(--c-line); font-size:var(--text-md); }
+.cl-stat b{ font-variant-numeric:tabular-nums; color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* legend (dataviz key) */
+.cl-legend{ display:flex; gap:var(--space-4); flex-wrap:wrap; font-size:var(--text-sm);
+  color:var(--c-dim); margin-top:var(--space-3); }
+.cl-legend i{ display:inline-block; width:13px; height:13px; border-radius:3px; margin-right:5px;
+  vertical-align:-2px; border:1px solid rgba(0,0,0,.18); }
+
+/* canvas surface (pixel sims) */
+.cl-canvas{ display:block; image-rendering:pixelated; background:var(--c-inset);
+  border-radius:var(--radius-md); border:var(--border) solid var(--c-line);
+  max-width:100%; height:auto; touch-action:none; }
+
+/* ===================================================================== FIGURE */
+.cl-figure{ margin:var(--space-5) 0; }
+.cl-figure img{ width:100%; display:block; border-radius:var(--radius-lg);
+  border:var(--border) solid var(--c-line); background:var(--c-inset); }
+.cl-figcaption{ color:var(--c-dim); font-size:var(--text-sm); margin-top:var(--space-2);
+  max-width:var(--measure); }
+.cl-figcaption b{ color:var(--c-body); }
+.cl-two{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); }
+@media(max-width:620px){ .cl-two{ grid-template-columns:1fr; } }
+
+/* ============================================================= MATH / CODE */
+.cl-code,code.cl-code{ font-family:var(--font-mono); font-size:.92em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); padding:.06em .4em; border-radius:5px; color:var(--c-code-ink); }
+.cl-kbd{ font-family:var(--font-mono); font-size:.85em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-bottom-width:2px; padding:.08em .45em;
+  border-radius:5px; color:var(--c-ink); }
+/* display equation / code callout */
+.cl-eq{ display:block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-amber); padding:var(--space-3) var(--space-4);
+  border-radius:var(--radius-md); margin:var(--space-4) 0; overflow-x:auto;
+  color:var(--c-code-ink); font-family:var(--font-mono); font-size:.94rem;
+  line-height:1.55; white-space:pre-wrap; }
+
+/* ===================================================================== TABLE */
+.cl-table{ border-collapse:collapse; width:100%; font-size:var(--text-md); margin:var(--space-3) 0;
+  font-variant-numeric:tabular-nums; }
+.cl-table th,.cl-table td{ border:var(--border) solid var(--c-line); padding:7px 10px; text-align:left; }
+.cl-table th{ background:var(--c-inset); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-table td.num{ text-align:right; font-family:var(--font-mono); }
+
+/* verdict colours for verification rows */
+.cl-ok{ color:var(--c-ok); font-weight:var(--weight-bold); }
+.cl-bad{ color:var(--c-hot); font-weight:var(--weight-bold); }
+
+/* ===================================================== REPRODUCE / DETAILS */
+.cl-details{ margin:var(--space-3) 0; border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:var(--space-1) var(--space-4); background:var(--c-surface); }
+.cl-details summary{ cursor:pointer; color:var(--c-cream); font-weight:var(--weight-bold);
+  padding:var(--space-2) 0; list-style-position:inside; }
+.cl-details[open] summary{ margin-bottom:var(--space-1); }
+
+/* a dedicated "How this was made / reproduce it" block */
+.cl-repro{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-teal); border-radius:var(--radius-md);
+  padding:var(--space-4) var(--space-5); margin:var(--space-5) 0; }
+.cl-repro__title{ display:flex; align-items:center; gap:.5em; color:var(--c-teal-ink);
+  font-weight:var(--weight-bold); margin:0 0 var(--space-2); }
+.cl-repro__title::before{ content:"⚙"; }
+
+/* references list */
+.cl-refs{ font-size:var(--text-sm); color:var(--c-dim); padding-left:1.2em; }
+.cl-refs li{ margin:7px 0; }
+
+/* ===================================================================== MOTION */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
+
+/* --------------------------------------------------------------- utilities */
+.cl-visually-hidden{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.cl-stack > * + *{ margin-top:var(--space-4); }
+.cl-muted{ color:var(--c-dim); }
+.cl-tabnums{ font-variant-numeric:tabular-nums; }
+
+/* ============================================================ page-specific
+   Built on the Curiosity Lab tokens — no new hard-coded hues for text. */
+.r30-lead-fig{ margin-top:var(--space-4); }
+
+/* truth-table / rule-icon editor */
+.tt{ display:flex; gap:8px; flex-wrap:wrap; margin:var(--space-3) 0 var(--space-2); }
+.tt-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.tt-nb{ display:flex; gap:2px; }
+.bit{ width:15px; height:15px; border-radius:3px; border:1px solid var(--c-line-strong);
+  background:var(--c-surface); }
+.bit.on{ background:var(--c-ink); border-color:var(--c-ink); }
+.tt-arrow{ color:var(--c-dim); font-size:11px; line-height:1; }
+.tt-out{ width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:15px; cursor:pointer;
+  border-radius:var(--radius-sm); border:1px solid var(--c-line-strong);
+  background:var(--c-surface-2); color:var(--c-ink);
+  transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.tt-out:hover{ border-color:var(--c-amber); }
+.tt-out.on{ background:var(--c-amber); color:var(--c-on-accent); border-color:var(--c-amber); }
+.tt-code{ font-size:var(--text-2xs); color:var(--c-dim); font-family:var(--font-mono); letter-spacing:.04em; }
+
+.numinput{ width:5em; font-family:var(--font-mono); font-size:var(--text-md); text-align:center;
+  background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-sm); min-height:var(--control-h); }
+.readout{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--c-body);
+  margin:var(--space-3) 0 0; line-height:1.7; }
+.readout .lbl{ color:var(--c-dim); }
+.readout b{ color:var(--c-cream); }
+.rulebin{ letter-spacing:.22em; color:var(--c-code-ink); }
+.boolean{ color:var(--c-code-ink); word-break:break-word; }
+
+/* crisp (non-pixelated) plot canvas for the density chart */
+.cl-plot{ display:block; width:100%; height:auto; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-radius:var(--radius-md); }
+
+/* the live "two engines agree" / "Lucas check" verdict line */
+.verdict{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  font-size:var(--text-md); margin:var(--space-3) 0 0; min-height:1.4em; }
+.verdict .cl-ok::before{ content:"✓ "; }
+.verdict .cl-bad::before{ content:"✗ "; }
+
+.big-stat b{ font-size:var(--text-lg); }
+.prize-list h3{ margin-top:var(--space-4); }
+.prize-list h3:first-child{ margin-top:var(--space-1); }
+.flag-grid{ margin:var(--space-2) 0 0; }
+</style>
+<style>
+/* --- Lab #4 page-local helpers (extend the design system) --- */
+.cl-pills{ display:flex; flex-wrap:wrap; gap:var(--space-2); margin-top:var(--space-4); }
+.cl-note__label{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  color:var(--c-teal-ink); margin:0 0 var(--space-1); }
+.cl-note__label::before{ content:"\2139"; font-size:1.05em; line-height:1; }
+.cl-checklist{ max-width:var(--measure); list-style:none; padding-left:0; margin:var(--space-4) 0; }
+.cl-checklist li{ position:relative; padding-left:1.9em; margin:var(--space-3) 0; color:var(--c-body); }
+.cl-checklist li::before{ content:"\2713"; position:absolute; left:0; top:.05em; color:var(--c-ok);
+  font-weight:var(--weight-bold); }
+.cl-figure figcaption{ color:var(--c-dim); font-size:var(--text-sm); margin-top:var(--space-2); max-width:var(--measure); }
+.cl-figure figcaption b{ color:var(--c-body); }
+/* the lab canvas draws crisp bars + axes — leave default rendering */
+#histCanvas, #stripCanvas{ image-rendering:auto; width:100%; display:block;
+  border-radius:var(--radius-lg); background:var(--c-surface-2);
+  border:var(--border) solid var(--c-line); }
+.cl-statgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:0 var(--space-5);
+  margin:var(--space-4) 0 var(--space-2); }
+.cl-gennote{ color:var(--c-body); font-size:var(--text-md); margin:var(--space-3) 0 0;
+  max-width:var(--measure); min-height:2.6em; }
+.cl-verdict-ok{ color:var(--c-ok); }
+.cl-verdict-no{ color:var(--c-hot); }
+.cl-tagline{ font-variant-numeric:tabular-nums; }
+.cl-mono{ font-family:var(--font-mono); }
+/* let the source/N segmented controls wrap on phones instead of clipping */
+@media (max-width:820px){ #genSeg{ flex-wrap:wrap; overflow:visible; } #genSeg .cl-btn{ flex:1 0 auto; justify-content:center; } }
+@media (max-width:620px){ #viewSeg{ flex-wrap:wrap; } #viewSeg .cl-btn{ flex:1 0 auto; justify-content:center; } }
+</style>
+<style>
+/* --- Lab #5 (Collatz) page-local helpers — extend the design system --- */
+.cl-tag--proven{ color:var(--c-ok); border-color:color-mix(in srgb,var(--c-ok) 45%,transparent);
+  background:color-mix(in srgb,var(--c-ok) 12%,transparent); }
+.cl-tag--cited{ color:var(--c-teal-ink); border-color:color-mix(in srgb,var(--c-teal) 45%,transparent);
+  background:color-mix(in srgb,var(--c-teal) 12%,transparent); }
+.cl-tag--open{ color:var(--c-warn-ink); border-color:var(--c-warn-edge); background:var(--c-warn-bg); }
+
+/* parity-vector bijection grid (widget C) */
+.bij-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(56px,1fr)); gap:8px; margin:var(--space-3) 0; }
+.bij-cell{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:7px 4px;
+  border:var(--border) solid var(--c-line); border-radius:var(--radius-md); background:var(--c-surface-2); }
+.bij-cell .r{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--c-cream); font-weight:var(--weight-bold); }
+.bij-cell.collide{ border-color:var(--c-hot); border-width:2px; }
+.bij-cell .bit.on{ background:var(--c-amber); border-color:var(--c-amber); }
+.bij-legend{ display:flex; gap:var(--space-4); flex-wrap:wrap; font-size:var(--text-sm); color:var(--c-dim); margin-top:var(--space-2); }
+
+/* cycle / value chains (widgets D, E) */
+.col-cycle{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:var(--space-3) 0; }
+.col-chip{ display:inline-flex; align-items:center; justify-content:center; min-width:2.2em; padding:3px 8px;
+  font-family:var(--font-mono); font-size:var(--text-sm); color:var(--c-ink); background:var(--c-surface-2);
+  border:var(--border) solid var(--c-line); border-radius:var(--radius-sm); }
+.col-chip--min{ background:var(--c-amber); color:var(--c-on-accent); border-color:var(--c-amber); font-weight:var(--weight-bold); }
+.col-arrow{ color:var(--c-dim); font-size:var(--text-sm); }
+
+/* record tables (widget B) */
+.col-tblwrap{ max-height:330px; overflow:auto; border:var(--border) solid var(--c-line); border-radius:var(--radius-md); }
+.col-tblwrap .cl-table{ margin:0; }
+.col-tblwrap .cl-table th{ position:sticky; top:0; z-index:1; }
+.cl-table tr.is-mark td{ background:color-mix(in srgb,var(--c-amber) 20%,transparent); color:var(--c-ink); font-weight:var(--weight-bold); }
+.cl-table th.num{ text-align:right; }
+.bij-cell .bits{ display:flex; gap:3px; }
+
+/* thin data strokes need more luminance than filled bars on light paper */
+:root{ --plot-stroke:#9a5410; }                  /* dark amber, 4.97:1 on --c-inset (light) */
+@media (prefers-color-scheme:dark){ :root{ --plot-stroke:#f0a249; } }
+[data-theme="light"]{ --plot-stroke:#9a5410; }
+[data-theme="dark"] { --plot-stroke:#f0a249; }
+
+/* let wide segmented controls wrap instead of clipping on phones */
+@media (max-width:560px){
+  #aPresets, #cMap, #eMap{ flex-wrap:wrap; overflow:visible; }
+  #aPresets .cl-btn, #cMap .cl-btn, #eMap .cl-btn{ flex:1 0 auto; justify-content:center; }
+}
+</style>
+</head>
+<body class="cl-body cl-body--wash">
+<main class="cl-wrap">
+
+<header class="cl-header cl-header--ruled">
+  <div class="cl-kicker">Curiosity Lab &middot; No. 5</div>
+  <h1 class="cl-title">The 3n&thinsp;+&thinsp;1 problem: a rule too simple to solve</h1>
+  <div class="cl-pills">
+    <span class="cl-pill"><b>interactive</b> &mdash; drop in any number</span>
+    <span class="cl-pill"><b>verified</b> &mdash; 31 checks + 23 cross-checks</span>
+    <span class="cl-pill"><b>sourced</b> &mdash; proven &middot; cited &middot; open, flagged</span>
+  </div>
+  <p class="cl-lead">Take any whole number. If it&rsquo;s even, halve it; if it&rsquo;s odd, triple it and add one. Repeat.
+  Every number anyone has ever tried &mdash; and that now means <b>all of them up to about 2.36&times;10<sup>21</sup></b> &mdash;
+  eventually crashes to&nbsp;1. Nobody can prove it always does. This is the <b>Collatz conjecture</b>. Below you can watch
+  the chaos, then meet the exact, checkable <i>skeleton</i> hiding underneath it.</p>
+</header>
+
+<!-- ============================ 1. THE RULE ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">1</span>The rule nobody can tame</h2>
+<div class="cl-prose">
+  <p>The whole problem fits on a napkin. Start with a positive integer&nbsp;<i>n</i> and apply the
+  <b>Collatz map</b> over and over:</p>
+  <p class="cl-eq">C(n) = n / 2        if n is even
+C(n) = 3n + 1      if n is odd</p>
+  <p>The values jump around like hailstones in a thundercloud &mdash; up on the odd steps, down on the even ones &mdash;
+  before (so far, always) tumbling to the cycle 1&nbsp;&rarr;&nbsp;4&nbsp;&rarr;&nbsp;2&nbsp;&rarr;&nbsp;1. The
+  <b>conjecture</b> is that <i>every</i> starting number reaches&nbsp;1. It looks obvious from a few examples and has
+  resisted proof for nearly a century.</p>
+</div>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">What is <i>not</i> proven (this is an open problem)</p>
+  <p>By brute force, every starting value up to <b>2<sup>71</sup> = 2,361,183,241,434,822,606,848</b>
+  (&asymp;&nbsp;2.36&times;10<sup>21</sup>) has been checked to reach&nbsp;1 (Barina&nbsp;2025; the previous record was
+  2<sup>68</sup>, Barina&nbsp;2021). But <b>no proof</b> covers all numbers. Paul Erd&odblac;s reportedly said
+  &ldquo;<i>Mathematics is not yet ready for such problems</i>,&rdquo; and offered $500 for a solution. Everything in
+  this page is either <span class="cl-tag cl-tag--proven">proven by code</span>,
+  <span class="cl-tag cl-tag--cited">cited</span> from the literature, or flagged
+  <span class="cl-tag cl-tag--open">open</span>. The conjecture itself stays open.</p>
+</div>
+
+<div class="cl-prose">
+  <p>Type a number and watch its trajectory. Values are held as exact big integers, so nothing overflows;
+  the vertical axis is logarithmic because the climbs are enormous. The marked dot is the trajectory&rsquo;s peak.</p>
+</div>
+
+<div class="cl-panel" aria-label="Interactive hailstone trajectory plotter">
+  <div class="cl-controls">
+    <label for="aN">start <i>n</i>:</label>
+    <input class="numinput" id="aN" type="text" inputmode="numeric" value="27" maxlength="22"
+      aria-label="starting number n" autocomplete="off" spellcheck="false">
+    <button class="cl-btn" id="aGo" type="button">plot</button>
+    <span class="cl-seg" id="aPresets" role="group" aria-label="preset starting numbers">
+      <button class="cl-btn" type="button" data-n="27">27</button>
+      <button class="cl-btn" type="button" data-n="97">97</button>
+      <button class="cl-btn" type="button" data-n="871">871</button>
+      <button class="cl-btn" type="button" data-n="6171">6171</button>
+      <button class="cl-btn" type="button" data-n="837799">837799</button>
+    </span>
+    <button class="cl-btn" id="aAnim" type="button" style="margin-left:auto" aria-label="replay the climb as an animation">&#9654; replay</button>
+  </div>
+  <canvas id="aCanvas" class="cl-plot" role="img"
+    aria-label="Trajectory of the chosen number under the Collatz map, value on a logarithmic vertical axis versus step number."></canvas>
+  <p id="aLive" class="cl-visually-hidden" aria-live="polite"></p>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>steps to reach 1</span><b id="aSteps" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>highest point (peak)</span><b id="aPeak" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>reaches 1?</span><b id="aReach" class="cl-mono">&mdash;</b></div>
+  </div>
+  <p class="cl-gennote" id="aNote"></p>
+</div>
+
+<!-- ============================ 2. STUBBORN ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">2</span>The most stubborn numbers</h2>
+<div class="cl-prose">
+  <p>Most numbers fall quickly. A few put up a fight, and mathematicians track the <b>record-breakers</b>: as you scan
+  upward, which start takes the most steps so far, and which one climbs the highest?</p>
+  <p>The famous small example is <b>27</b>. Its neighbours settle in a couple of dozen steps; 27 instead climbs all the
+  way to <b>9,232</b> and needs <b>111</b> steps to reach&nbsp;1. The most stubborn start below a million is
+  <b>837,799</b>: <b>524</b> steps, peaking at <b>2,974,984,576</b> &mdash; nearly three billion, about 3,550&times; its
+  own size. It is the last of <b>44</b> total-stopping-time records below 10<sup>6</sup> (OEIS&nbsp;A006877). Drag the
+  scan limit below and these tables fill themselves &mdash; computed live, never hard-coded.</p>
+</div>
+
+<div class="cl-panel" aria-label="Record-setting starting values explorer">
+  <div class="cl-controls">
+    <label for="bN" style="min-width:11rem">scan all starts up to N&nbsp;= <b id="bNOut" class="cl-mono">100,000</b></label>
+    <input class="cl-range" id="bN" type="range" min="3" max="6" step="0.01" value="5"
+      aria-label="scan limit N, from one thousand to one million (logarithmic)">
+  </div>
+  <div class="cl-two">
+    <div>
+      <h3 class="cl-h3">Total-stopping-time records</h3>
+      <p class="cl-hint cl-mono">OEIS A006877 / A006878 &middot; start &rarr; steps to reach 1</p>
+      <div class="col-tblwrap"><table class="cl-table" id="bStopTbl"><thead><tr><th>start</th><th class="num">steps</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div>
+      <h3 class="cl-h3">Altitude (peak) records</h3>
+      <p class="cl-hint cl-mono">OEIS A006884 / A006885 &middot; start &rarr; highest value reached</p>
+      <div class="col-tblwrap"><table class="cl-table" id="bAltTbl"><thead><tr><th>start</th><th class="num">peak</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+  <p class="cl-gennote" id="bNote"></p>
+  <h3 class="cl-h3">Steps to reach 1, for every start up to 5,000</h3>
+  <canvas id="bScatter" class="cl-plot" role="img"
+    aria-label="Scatter plot of total stopping time versus starting value for n up to five thousand, with 27 marked."></canvas>
+  <p class="cl-gennote">Each dot is one starting number; its height is the number of steps to reach&nbsp;1. The spray is
+  famous &mdash; structure and chaos at once &mdash; and <b>27</b> (marked) towers over its neighbours.</p>
+</div>
+
+<!-- ============================ 3. SKELETON ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">3</span>The hidden skeleton: Terras&rsquo;s parity bijection</h2>
+<div class="cl-prose">
+  <p>Here is where the chaos acquires an exact backbone. First switch to the <b>accelerated (Syracuse) map</b>: since
+  3n+1 is always even when <i>n</i> is odd, fold that forced halving into one step.</p>
+  <p class="cl-eq">T(n) = n / 2          if n is even
+T(n) = (3n + 1) / 2    if n is odd</p>
+  <p>Now forget the values and keep only the <b>parity at each step</b>: write a <b>0</b> when the even rule fired and a
+  <b>1</b> when the odd rule fired. After <i>k</i> steps you have a length-<i>k</i> string of bits &mdash; the
+  <b>parity vector</b> of&nbsp;<i>n</i>.</p>
+  <p><b>Terras&rsquo;s theorem (1976).</b> That parity vector depends only on <b><i>n</i> mod 2<sup><i>k</i></sup></b>,
+  and the map <b>(n mod 2<sup>k</sup>) &rarr; (its k-bit parity vector)</b> is a <b>bijection</b>
+  &#8484;/2<sup>k</sup> &rarr; {0,1}<sup>k</sup>: each of the 2<sup>k</sup> possible bit-patterns is produced by
+  <i>exactly one</i> residue class. It is the cleanest piece of order in the whole problem &mdash; and it holds for the
+  accelerated map&nbsp;<b>T</b> but <b>fails</b> for the raw map&nbsp;<b>C</b>. Flip the toggle to watch raw&nbsp;C
+  collide.</p>
+</div>
+
+<div class="cl-panel" aria-label="Parity-vector bijection grid">
+  <div class="cl-controls">
+    <span style="color:var(--c-dim); font-size:var(--text-sm); align-self:center;">steps <i>k</i></span>
+    <span class="cl-seg" id="cK" role="group" aria-label="number of steps k">
+      <button class="cl-btn" type="button" data-k="1">1</button>
+      <button class="cl-btn" type="button" data-k="2">2</button>
+      <button class="cl-btn" type="button" data-k="3">3</button>
+      <button class="cl-btn is-on" type="button" data-k="4" aria-pressed="true">4</button>
+      <button class="cl-btn" type="button" data-k="5">5</button>
+    </span>
+    <span class="cl-seg" id="cMap" role="group" aria-label="which map" style="margin-left:auto">
+      <button class="cl-btn is-on" type="button" data-map="T" aria-pressed="true">T (accelerated)</button>
+      <button class="cl-btn" type="button" data-map="C" aria-pressed="false">raw C</button>
+    </span>
+  </div>
+  <p class="verdict" id="cVerdict" aria-live="polite"></p>
+  <div class="bij-grid" id="cGrid"></div>
+  <div class="bij-legend">
+    <span><span class="bit on" style="display:inline-block;vertical-align:-2px"></span> odd step (1)</span>
+    <span><span class="bit" style="display:inline-block;vertical-align:-2px"></span> even step (0)</span>
+    <span id="cCollideKey" hidden><span style="display:inline-block;width:13px;height:13px;border:2px solid var(--c-hot);border-radius:3px;vertical-align:-2px"></span> collision &mdash; a pattern shared by 2+ residues</span>
+  </div>
+  <p class="readout" id="cAffine"></p>
+  <p class="cl-gennote" id="cNote"></p>
+</div>
+
+<div class="cl-note">
+  <p class="cl-note__label">The affine form that makes it exact</p>
+  <p>The bijection is really a statement about an invertible affine map. After <i>k</i> accelerated steps,
+  <b>2<sup>k</sup>&middot;T<sup>k</sup>(n) = 3<sup>a</sup>&middot;n + c</b>, where <b>a</b> is the number of odd steps so
+  far and <b>c</b> is an integer fixed by the parity pattern (hence by <i>n</i> mod 2<sup>k</sup>). The readout above
+  computes this identity live for <i>n</i>&nbsp;=&nbsp;27. Because 3<sup>a</sup> is odd and 2<sup>k</sup> is a power of
+  two, the map is invertible mod 2<sup>k</sup> &mdash; which is exactly why every pattern has a unique residue.
+  <span class="cl-tag cl-tag--cited">cited</span> Terras&nbsp;(1976); Lagarias&nbsp;(1985).</p>
+</div>
+
+<!-- ============================ 4. DESCENT ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">4</span>Why almost every number falls</h2>
+<div class="cl-prose">
+  <p>The bijection does real work. Group the numbers by their <i>k</i>-bit parity vector, and ask: after <i>k</i>
+  accelerated steps, has a number dropped below where it started? One accelerated step multiplies by
+  <b>3/2</b> on an odd bit and by <b>1/2</b> on an even bit, so after <i>k</i> steps with <b>a</b> odd bits the value is
+  scaled by <b>3<sup>a</sup>&thinsp;/&thinsp;2<sup>k</sup></b> (times a bounded additive wobble). When
+  <b>3<sup>a</sup>&nbsp;&lt;&nbsp;2<sup>k</sup></b>, that class has <i>provably</i> descended.</p>
+  <p>How many classes are safe? Terras&rsquo;s exact count: among the 2<sup>k</sup> residues mod 2<sup>k</sup>, the number with
+  exactly <b>a</b> odd steps is <b>precisely C(k,&thinsp;a)</b> &mdash; the binomial coefficient. So the odd-step count is
+  distributed <i>exactly</i> Binomial(<i>k</i>,&thinsp;&frac12;). The threshold <b>3<sup>a</sup>&lt;2<sup>k</sup></b> is just
+  <b>a&nbsp;&lt;&nbsp;k&middot;log&thinsp;2&thinsp;/&thinsp;log&thinsp;3&nbsp;&asymp;&nbsp;0.6309&thinsp;k</b>, comfortably
+  to the right of the mean <i>k</i>/2 &mdash; so the descending fraction climbs toward 1 (slowly) as <i>k</i> grows. This
+  is the engine behind Terras&rsquo;s <b>density-1</b> theorem.</p>
+</div>
+
+<div class="cl-panel" aria-label="Descent sieve: distribution of odd-steps across residue classes">
+  <div class="cl-controls">
+    <label for="dK" style="min-width:12rem">accelerated steps <i>k</i>&nbsp;= <b id="dKOut" class="cl-mono">12</b></label>
+    <input class="cl-range" id="dK" type="range" min="1" max="25" step="1" value="12"
+      aria-label="number of accelerated steps k, from 1 to 25">
+  </div>
+  <canvas id="dCanvas" class="cl-plot" role="img"
+    aria-label="Bar chart of how many residue classes mod 2 to the k have exactly a odd-steps, versus a, matching the Binomial(k, one-half) coefficients, with the provably-descending region a below 0.6309 k shaded."></canvas>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>provably descends (3<sup>a</sup>&lt;2<sup>k</sup>)</span><b id="dFrac" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>threshold: odd&#8209;steps&nbsp;a&nbsp;&le;</span><b id="dThr" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>bars vs Binomial(k,&frac12;)</span><b id="dCheck" class="cl-mono">&mdash;</b></div>
+  </div>
+  <p class="cl-gennote" id="dNote"></p>
+  <h3 class="cl-h3">Which classes mod 32 could hold the smallest counterexample?</h3>
+  <p class="cl-gennote">A would-be minimal counterexample (a number that never reaches&nbsp;1) must be odd, must be
+  &equiv;&nbsp;3&nbsp;(mod&nbsp;4), and must <i>not</i> already descend within 5 accelerated steps. Of the 32 classes mod&nbsp;32,
+  only these survive &mdash; computed live by <span class="cl-mono">minCounterexampleSurvivors(5)</span>:</p>
+  <div class="col-cycle" id="dSurv" aria-label="surviving residue classes mod 32"></div>
+  <p class="cl-gennote" id="dSurvNote"></p>
+</div>
+
+<div class="cl-note">
+  <p class="cl-note__label">What &ldquo;almost every&rdquo; really means here</p>
+  <p>The sieve proves a <i>density</i> statement, not the conjecture. <b>Terras&nbsp;(1976)</b> &mdash; independently
+  <b>Everett&nbsp;(1977)</b> &mdash; turned this counting into a theorem: the set of <i>n</i> whose trajectory eventually
+  drops below <i>n</i> has <b>natural density&nbsp;1</b>. <b>Krasikov&ndash;Lagarias&nbsp;(2003)</b> made it quantitative:
+  at least <b>x<sup>0.84</sup></b> of the integers up to <i>x</i> reach&nbsp;1. And <b>Tao&nbsp;(2019/2022)</b> proved that
+  <i>almost all</i> orbits attain <i>almost bounded</i> values (in logarithmic density). None of these rule out a rare
+  escaper &mdash; the conjecture stays <span class="cl-tag cl-tag--open">open</span>.
+  <span class="cl-tag cl-tag--cited">cited</span></p>
+</div>
+
+<!-- ============================ 5. WHY 3 AND +1 ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">5</span>Why &ldquo;3&rdquo; and &ldquo;+1&rdquo; matter</h2>
+<div class="cl-prose">
+  <p>If the rule is so simple, why is it so finely balanced? Change one symbol and the behaviour flips. The same
+  drift argument tells you why: each odd accelerated step multiplies by about <b>q/4</b> for the map
+  <i>qn</i>+1 (the &times;<i>q</i> is followed, on average, by two halvings). For <b>q&nbsp;=&nbsp;3</b> that is
+  <b>3/4&nbsp;&lt;&nbsp;1</b> &mdash; expect <i>shrinkage</i>, so falling-to-1 is plausible. For <b>q&nbsp;=&nbsp;5</b> it is
+  <b>5/4&nbsp;&gt;&nbsp;1</b> &mdash; expect <i>growth</i>, so most orbits should run away.</p>
+  <p>Watch it happen. Pick a cousin map and a starting value: <b>3n&minus;1</b> falls into one of several finite cycles;
+  <b>5n+1</b> has more than one cycle <i>and</i> orbits that seem to climb forever. The orbit is computed live and
+  rotated to its smallest element.</p>
+</div>
+
+<div class="cl-panel" aria-label="Sibling maps: cycles and divergence">
+  <div class="cl-controls">
+    <span class="cl-seg" id="eMap" role="group" aria-label="which map">
+      <button class="cl-btn is-on" type="button" data-map="C" aria-pressed="true">3n + 1</button>
+      <button class="cl-btn" type="button" data-map="M" aria-pressed="false">3n &minus; 1</button>
+      <button class="cl-btn" type="button" data-map="P" aria-pressed="false">5n + 1</button>
+    </span>
+    <label for="eN" style="margin-left:auto">start:</label>
+    <input class="numinput" id="eN" type="text" inputmode="numeric" value="27" maxlength="16"
+      aria-label="starting number" autocomplete="off" spellcheck="false">
+    <button class="cl-btn" id="eGo" type="button">trace</button>
+  </div>
+  <div class="cl-controls" id="ePresets" role="group" aria-label="example starts">
+    <span style="color:var(--c-dim); font-size:var(--text-sm); align-self:center;">try:</span>
+    <button class="cl-btn" type="button" data-map="C" data-n="27">3n+1 &middot; 27</button>
+    <button class="cl-btn" type="button" data-map="M" data-n="5">3n&minus;1 &middot; 5</button>
+    <button class="cl-btn" type="button" data-map="M" data-n="17">3n&minus;1 &middot; 17</button>
+    <button class="cl-btn" type="button" data-map="P" data-n="1">5n+1 &middot; 1</button>
+    <button class="cl-btn" type="button" data-map="P" data-n="13">5n+1 &middot; 13</button>
+    <button class="cl-btn" type="button" data-map="P" data-n="7">5n+1 &middot; 7 (climbs)</button>
+  </div>
+  <p class="verdict" id="eVerdict" aria-live="polite"></p>
+  <div class="col-cycle" id="eCycle" aria-label="the cycle, rotated to its smallest element"></div>
+  <p class="cl-gennote" id="eNote"></p>
+</div>
+
+<div class="cl-note">
+  <p class="cl-note__label">Bonus: a rational cycle hiding in the parity patterns</p>
+  <p>Every periodic parity pattern is realised by <i>exactly one</i> rational with odd denominator
+  (<b>Lagarias&nbsp;1990</b>). The pattern <span class="cl-mono">(1,0,1,1,0,0,1)</span> belongs to <b>151/47</b>, and the
+  accelerated map carries it around a 7-step rational cycle &mdash; reconstructed live below by
+  <span class="cl-mono">rationalCycle</span>:</p>
+  <div class="col-cycle" id="eRat" aria-label="the rational cycle for parity pattern 1011001"></div>
+  <p class="cl-gennote">Integers are the special case with denominator&nbsp;1; the same machinery describes the whole
+  2-adic picture. <span class="cl-tag cl-tag--cited">cited</span> Lagarias (1990), <i>Acta Arith.</i> <b>56</b>.</p>
+</div>
+
+<!-- ============================ 6. LEDGER ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">6</span>What we computed vs. what we cite</h2>
+<div class="cl-prose">
+  <p>House rule of this lab: keep what the code actually checks apart from what we take on the literature&rsquo;s word.
+  Two gates back this page &mdash; <b class="cl-mono">verify.py</b> (<b>31</b> checks, standard-library Python) and
+  <b class="cl-mono">test_core.mjs</b> (<b>23</b> checks: 19 value cross-checks of the in-browser engine against Python,
+  plus 4 structural guards &mdash; including that this page inlines that engine byte-for-byte). Every widget above runs the <i>same</i> functions the tests pin down.
+  The code is open: <a class="cl-link" href="https://github.com/rtmodb-rgb/curiosity-lab">github.com/rtmodb-rgb/curiosity-lab</a>.</p>
+</div>
+
+<h3 class="cl-h3">Re-computed here (two independent ways where it matters)</h3>
+<ul class="cl-checklist">
+  <li>The raw map <b>C</b> and accelerated map <b>T</b>, trajectories, total stopping time and altitude &mdash; all on exact
+      big integers, so nothing overflows. <b>27</b> &rarr; <b>111</b> steps, peak <b>9,232</b>, reproduced live.</li>
+  <li><b>Terras&rsquo;s parity bijection</b>: the residue&nbsp;&rarr;&nbsp;parity-vector map <b>is</b> a bijection
+      &#8484;/2<sup>k</sup>&nbsp;&rarr;&nbsp;{0,1}<sup>k</sup> for the accelerated map <b>T</b> (checked exhaustively
+      <i>k</i>&nbsp;=&nbsp;1&hellip;14) and <b>fails</b> &mdash; the same pattern collides &mdash; for the raw map <b>C</b>
+      (<i>k</i>&nbsp;=&nbsp;2&hellip;8). The affine identity <b>2<sup>k</sup>T<sup>k</sup>(n)=3<sup>a</sup>n+c</b> checks out.</li>
+  <li><b>The descent sieve</b>: the empirical odd-step tally over residues equals the <b>Binomial(k,&frac12;)</b> coefficients
+      exactly; the provably-descending fraction rises <b>0.8125 &rarr; 0.8281 &rarr; 0.8491 &rarr; 0.8684 &rarr; 0.8852</b>
+      (<i>k</i>&nbsp;=&nbsp;5,10,15,20,25); the only survivors mod&nbsp;32 are <b>{7, 15, 27, 31}</b>.</li>
+  <li><b>Records</b> match OEIS A006877/A006878 (steps) and A006884/A006885 (altitude): the most stubborn start below
+      10<sup>6</sup> is <b>837,799</b> &rarr; <b>524</b> steps, peak <b>2,974,984,576</b> &mdash; the last of <b>44</b> records.</li>
+  <li><b>Sibling maps</b>: 3n&minus;1 cycles <b>{5,14,7,20,10}</b> and the 18-long one through 17; 5n+1 has the cycle through
+      <b>1</b> <i>and</i> a distinct one through <b>13</b>, while <b>7</b> climbs with no cycle found; the rational cycle
+      <b>151/47</b> is rebuilt from its parity pattern.</li>
+</ul>
+
+<h3 class="cl-h3">Cited, not re-proved</h3>
+<ul class="cl-checklist" style="--c-ok:var(--c-dim)">
+  <li>The <b>conjecture itself is open.</b> The verification that <i>all</i> <i>n</i>&nbsp;&le;&nbsp;<b>2<sup>71</sup></b>
+      (&asymp;&nbsp;2.36&times;10<sup>21</sup>) reach 1 is <b>Barina&rsquo;s</b> GPU computation (2025), not ours.</li>
+  <li><b>Terras (1976)</b> / Everett (1977): the density-1 stopping-time theorem &mdash; we recompute its sieve, not the theorem.</li>
+  <li><b>Tao (2019/2022)</b>, <i>Forum of Math, Pi</i>: almost all orbits attain almost bounded values (logarithmic density).</li>
+  <li><b>Krasikov&ndash;Lagarias (2003)</b>: at least x<sup>0.84</sup> of integers up to <i>x</i> reach 1.</li>
+  <li>Cycle bounds: <b>Eliahou (1993)</b> &mdash; any nontrivial cycle has &ge; <b>17,087,915</b> elements (his 1993 figure;
+      the bound climbs with the verification limit, reaching &asymp;&nbsp;2.2&times;10<sup>11</sup> by 2025); <b>Hercher (2023)</b>
+      &mdash; no <i>m</i>-cycle for <i>m</i>&nbsp;&le;&nbsp;91.</li>
+  <li>The <b>q/4 drift</b> &ldquo;why 3 not 5&rdquo; argument is a <b>heuristic</b> (proven only for the 2-adic measure), not a
+      proof about integers.</li>
+</ul>
+
+<!-- ============================ SOURCES ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">&sect;</span>Sources</h2>
+<div class="cl-prose" style="font-size:var(--text-sm); color:var(--c-body)">
+  <p>
+  Collatz, L. (introduced <i>circa</i> 1937; circulated by word of mouth). &middot;
+  Terras, R. (1976). &ldquo;A stopping time problem on the positive integers.&rdquo; <i>Acta Arith.</i> <b>30</b>(3), 241&ndash;252. doi:10.4064/aa-30-3-241-252. &middot;
+  Everett, C. J. (1977). <i>Adv. Math.</i> <b>25</b>, 42&ndash;45. &middot;
+  Lagarias, J. C. (1985). &ldquo;The 3x+1 problem and its generalizations.&rdquo; <i>Amer. Math. Monthly</i> <b>92</b>, 3&ndash;23. &middot;
+  Lagarias, J. C. (1990). &ldquo;The set of rational cycles for the 3x+1 problem.&rdquo; <i>Acta Arith.</i> <b>56</b>, 33&ndash;53. doi:10.4064/aa-56-1-33-53. &middot;
+  Krasikov, I. &amp; Lagarias, J. C. (2003). <i>Acta Arith.</i> <b>109</b>(3), 237&ndash;258. doi:10.4064/aa109-3-4; arXiv:math/0205002. &middot;
+  Tao, T. (2022). &ldquo;Almost all orbits of the Collatz map attain almost bounded values.&rdquo; <i>Forum of Math, Pi</i> <b>10</b>, e12. doi:10.1017/fmp.2022.8; arXiv:1909.03562. &middot;
+  Barina, D. (2021). <i>J. Supercomput.</i> <b>77</b>, 2681&ndash;2688. doi:10.1007/s11227-020-03368-x. &middot;
+  Barina, D. (2025). <i>J. Supercomput.</i> <b>81</b>, art.&nbsp;810. doi:10.1007/s11227-025-07337-0. &middot;
+  Eliahou, S. (1993). <i>Discrete Math.</i> <b>118</b>, 45&ndash;56. doi:10.1016/0012-365X(93)90052-U. &middot;
+  Hercher, C. (2023). &ldquo;There are no Collatz m-cycles with m&nbsp;&le;&nbsp;91.&rdquo; <i>J. Integer Seq.</i> <b>26</b>, Art.&nbsp;23.3.5; arXiv:2201.00406. &middot;
+  Guy, R. K. <i>Unsolved Problems in Number Theory</i> (Erd&odblac;s quote). &middot;
+  OEIS: A006877, A006878, A006884, A006885, A006577 (oeis.org).
+  </p>
+</div>
+
+<footer class="cl-footer">
+  <p><b>Computational Curiosity Lab &mdash; No.&nbsp;5.</b> Built and verified in the open. Every trajectory, parity vector and
+  record on this page is computed from exact integers in your browser; the headline facts are pinned by two gates
+  (<span class="cl-mono">verify.py</span>, 31 checks &middot; <span class="cl-mono">test_core.mjs</span>, 23 checks)
+  and independently red-teamed before publishing. Proven facts are separated from cited and open ones, on purpose.</p>
+  <p style="margin-top:var(--space-3)"><a class="cl-link" href="../">&larr; back to the Lab</a></p>
+</footer>
+
+</main>
+
+<script>
+/* Inlined verbatim from code/collatz/core.js, COLLATZ_CORE region.
+   test_core.mjs guards that this block matches the tested file byte-for-byte;
+   do not edit here -- edit core.js and re-run the gate. */
+/* === COLLATZ_CORE START === */
+"use strict";
+
+// ---- the two maps ---------------------------------------------------------
+// Raw Collatz map C(n) = n/2 (even) | 3n+1 (odd).  Works on Number or BigInt.
+function collatzStep(n) {
+  if (typeof n === "bigint") return (n & 1n) === 0n ? n / 2n : 3n * n + 1n;
+  return n % 2 === 0 ? n / 2 : 3 * n + 1;
+}
+// Accelerated / Syracuse map T(n) = n/2 (even) | (3n+1)/2 (odd).
+function tStep(n) {
+  if (typeof n === "bigint") return (n & 1n) === 0n ? n / 2n : (3n * n + 1n) / 2n;
+  return n % 2 === 0 ? n / 2 : (3 * n + 1) / 2;
+}
+
+// ---- single trajectories (BigInt: always exact) ---------------------------
+// Full RAW trajectory n, C(n), ..., 1 as an array of BigInt.
+function trajectory(n) {
+  let x = typeof n === "bigint" ? n : BigInt(n);
+  if (x < 1n) throw new Error("Collatz is defined on positive integers");
+  const seq = [x];
+  while (x !== 1n) {
+    x = (x & 1n) === 0n ? x / 2n : 3n * x + 1n;
+    seq.push(x);
+  }
+  return seq;
+}
+// total stopping time = # RAW steps to reach 1 (OEIS A006577); a(1)=0, a(27)=111.
+function totalStoppingTime(n) {
+  let x = typeof n === "bigint" ? n : BigInt(n);
+  let s = 0;
+  while (x !== 1n) { x = (x & 1n) === 0n ? x / 2n : 3n * x + 1n; s++; }
+  return s;
+}
+// highest value the RAW trajectory of n reaches ("altitude"), as BigInt.
+function maxValue(n) {
+  let x = typeof n === "bigint" ? n : BigInt(n);
+  let hi = x;
+  while (x !== 1n) { x = (x & 1n) === 0n ? x / 2n : 3n * x + 1n; if (x > hi) hi = x; }
+  return hi;
+}
+// Terras stopping time sigma(n): least k>=1 with C^k(n) < n (RAW map); null for n<=1.
+function stoppingTimeBelow(n) {
+  let x = typeof n === "bigint" ? n : BigInt(n);
+  if (x <= 1n) return null;
+  const n0 = x;
+  let k = 0;
+  while (true) {
+    x = (x & 1n) === 0n ? x / 2n : 3n * x + 1n;
+    k++;
+    if (x < n0) return k;
+  }
+}
+
+// ---- the Terras parity vector (accelerated map T) -------------------------
+// first k parities (x_i = (T^i n) mod 2) as a 0/1 array; depends only on n mod 2^k.
+function parityVector(n, k) {
+  const v = new Array(k);
+  let m = typeof n === "bigint" ? n : BigInt(n);
+  for (let i = 0; i < k; i++) {
+    v[i] = Number(m & 1n);
+    m = (m & 1n) === 0n ? m / 2n : (3n * m + 1n) / 2n;
+  }
+  return v;
+}
+// # odd-steps among the first k accelerated steps = popcount of the parity vector.
+function numOddSteps(n, k) {
+  let a = 0;
+  let m = typeof n === "bigint" ? n : BigInt(n);
+  for (let i = 0; i < k; i++) {
+    if ((m & 1n) === 1n) a++;
+    m = (m & 1n) === 0n ? m / 2n : (3n * m + 1n) / 2n;
+  }
+  return a;
+}
+// True iff n |-> parityVector(n,k) is a bijection Z/2^k -> {0,1}^k.
+// step defaults to tStep (bijective); pass collatzStep to see it FAIL.
+function isParityBijection(k, step) {
+  step = step || tStep;
+  const seen = new Set();
+  for (let r = 0; r < (1 << k); r++) {
+    let m = r, key = 0;
+    for (let i = 0; i < k; i++) { key = key * 2 + (m & 1); m = step(m); }
+    if (seen.has(key)) return false;
+    seen.add(key);
+  }
+  return seen.size === (1 << k);
+}
+
+// ---- the descent sieve (engine of Terras's density-1 theorem) -------------
+function binom(k, a) {                 // exact C(k,a) for the small k we use
+  if (a < 0 || a > k) return 0;
+  a = Math.min(a, k - a);
+  let r = 1;
+  for (let i = 0; i < a; i++) r = (r * (k - i)) / (i + 1);
+  return Math.round(r);
+}
+// [num, den]: fraction of residue classes mod 2^k that PROVABLY drop below their
+// start within k accelerated steps (#odd-steps a has 3^a < 2^k).  -> 1, slowly.
+function descendingClassFraction(k) {
+  const den = Math.pow(2, k);
+  let num = 0;
+  let pow3 = 1;
+  for (let a = 0; a <= k; a++) {
+    if (pow3 < den) num += binom(k, a);
+    pow3 *= 3;
+  }
+  return [num, den];
+}
+// residues mod 2^k that could hold the SMALLEST counterexample: odd, ==3 mod 4,
+// and 3^(#odd-steps) > 2^k.  For k=5 -> [7,15,27,31].
+function minCounterexampleSurvivors(k) {
+  const den = 1 << k;
+  const out = [];
+  for (let r = 0; r < den; r++) {
+    if (r % 2 === 1 && r % 4 === 3 && Math.pow(3, numOddSteps(r, k)) > den) out.push(r);
+  }
+  return out;
+}
+
+// ---- bulk record scans (Number: exact for N <= 1e6) -----------------------
+// [[n, steps], ...] for n in 1..N setting a new RAW total-stopping-time record.
+function totalStoppingRecords(N) {
+  const steps = new Int32Array(N + 1);   // 0 = unknown; steps[1] stays 0
+  const known = new Uint8Array(N + 1);
+  known[1] = 1;
+  const recs = [[1, 0]];
+  let best = 0;
+  const path = [];
+  for (let start = 2; start <= N; start++) {
+    path.length = 0;
+    let m = start, base;
+    while (true) {
+      if (m <= N && known[m]) { base = steps[m]; break; }
+      path.push(m);
+      m = m % 2 === 0 ? m / 2 : 3 * m + 1;
+    }
+    for (let j = path.length - 1; j >= 0; j--) {
+      base += 1;
+      const x = path[j];
+      if (x <= N && !known[x]) { steps[x] = base; known[x] = 1; }
+    }
+    const s = steps[start];
+    if (s > best) { best = s; recs.push([start, s]); }
+  }
+  return recs;
+}
+// [[n, peak], ...] for n in 1..N setting a new RAW trajectory-peak record.
+function altitudeRecords(N) {
+  const recs = [];
+  let best = 0;
+  for (let n = 1; n <= N; n++) {
+    let x = n, hi = n;
+    while (x !== 1) { x = x % 2 === 0 ? x / 2 : 3 * x + 1; if (x > hi) hi = x; }
+    if (hi > best) { best = hi; recs.push([n, hi]); }
+  }
+  return recs;
+}
+
+// ---- honest contrast: sibling maps that DO cycle / diverge ----------------
+function step3nMinus1(n) { return n % 2 === 0 ? n / 2 : 3 * n - 1; }
+function step5nPlus1(n) { return n % 2 === 0 ? n / 2 : 5 * n + 1; }
+// the cycle (rotated to its minimum element) that `start` falls into under step.
+function findCycle(start, step, cap) {
+  cap = cap || 1000000;
+  const seen = new Map();
+  const path = [];
+  let m = start;
+  for (let i = 0; i < cap; i++) {
+    if (seen.has(m)) {
+      const cyc = path.slice(seen.get(m));
+      const k = cyc.indexOf(Math.min.apply(null, cyc));
+      return cyc.slice(k).concat(cyc.slice(0, k));
+    }
+    seen.set(m, i);
+    path.push(m);
+    m = step(m);
+    if (m <= 0) return null;
+  }
+  return null;
+}
+
+// ---- rational cycle for a periodic parity pattern (BigInt; Lagarias 1990) --
+// pattern is a 0/1 array; returns the cycle as ["p/q", ...] starting at the rational.
+function rationalCycle(pattern) {
+  const m = pattern.length;
+  let P = 1n, Q = 0n;                   // value after i steps = (P*x0 + Q)/2^i
+  for (let i = 0; i < m; i++) {
+    if (pattern[i]) { Q = 3n * Q + (1n << BigInt(i)); P = 3n * P; }
+  }
+  let a = 0; for (const b of pattern) a += b;
+  const denom = (1n << BigInt(m)) - 3n ** BigInt(a);
+  if (denom === 0n) throw new Error("pattern has 2^m == 3^a; no finite rational cycle");
+  // reduce x0 = Q/denom
+  const g0 = bgcd(Q < 0n ? -Q : Q, denom < 0n ? -denom : denom) || 1n;
+  let pn = Q / g0, pd = denom / g0;
+  const cyc = [pn + "/" + pd];
+  for (let s = 0; s < m - 1; s++) {
+    // one accelerated step on the fraction pn/pd (pd odd): parity = pn mod 2
+    if (((pn % 2n) + 2n) % 2n === 0n) { pn = pn / 2n; /* pd unchanged but pn even */ }
+    else { pn = 3n * pn + pd; pd = pd * 2n; }
+    const g = bgcd(pn < 0n ? -pn : pn, pd < 0n ? -pd : pd) || 1n;
+    pn /= g; pd /= g;
+    cyc.push(pn + "/" + pd);
+  }
+  return cyc;
+}
+function bgcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
+/* === COLLATZ_CORE END === */
+</script>
+
+<script>
+/* ===================================================================== *
+ *  Page UI for Lab #5. Uses the verified engine above; never redefines   *
+ *  its math. Every number shown is computed live from the core funcs.    *
+ * ===================================================================== */
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const group = s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+  const sup = n => String(n).split("").map(d => SUP[+d] || d).join("");
+  const reduxMax = arr => arr.reduce((a,b) => b>a?b:a, -Infinity);
+  const reduxMin = arr => arr.reduce((a,b) => b<a?b:a, Infinity);
+  const redraws = [];
+
+  function fitCanvas(canvas, ratio){
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 680, h = Math.round(ratio * w);
+    canvas.style.height = h + "px";
+    canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
+    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx, w, h};
+  }
+  // log10 of a positive BigInt, exact enough for pixel coordinates.
+  function log10Big(v){
+    if (v <= 0n) return 0;
+    const s = v.toString(), d = s.length, lead = s.slice(0, 16);
+    return (d - lead.length) + Math.log10(Number(lead));
+  }
+  // segmented-control: mark one button on, others off (with aria-pressed).
+  function segOn(seg, btn){
+    for (const b of seg.querySelectorAll("button")){
+      const on = b === btn;
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+
+  /* ---------------- Widget A: hailstone trajectory plotter ---------------- */
+  (function widgetA(){
+    const input = $("aN"), canvas = $("aCanvas");
+    let seq = null, logs = null;
+    function parse(){
+      const t = (input.value||"").trim().replace(/[, _]/g, "");
+      if (!/^[0-9]+$/.test(t)) return null;
+      let v; try { v = BigInt(t); } catch(e){ return null; }
+      return v >= 1n ? v : null;
+    }
+    function stepsToOne(n, cap){ let x = n, s = 0; while (x !== 1n){ if (s >= cap) return -1; x = (x & 1n) === 0n ? x/2n : 3n*x+1n; s++; } return s; }
+    function clearCanvas(){ const {ctx,w,h} = fitCanvas(canvas, 0.46); ctx.clearRect(0,0,w,h); }
+    function draw(upTo){
+      const {ctx, w, h} = fitCanvas(canvas, 0.46);
+      ctx.clearRect(0,0,w,h);
+      if (!seq) return;
+      const L = seq.length, maxLog = Math.max(1, reduxMax(logs));
+      const padL = 48, padR = 12, padT = 14, padB = 26;
+      const plotW = w-padL-padR, plotH = h-padT-padB;
+      const xOf = i => padL + (L<=1 ? 0 : plotW*i/(L-1));
+      const yOf = lg => padT + plotH*(1 - lg/maxLog);
+      ctx.font = "11px " + (cssv("--font-mono")||"monospace");
+      ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.lineWidth = 1;
+      const top = Math.ceil(maxLog);
+      const pstep = top > 12 ? Math.ceil(top/8) : 1;
+      for (let p = 0; p <= top; p += pstep){
+        const y = yOf(p);
+        ctx.strokeStyle = cssv("--c-line"); ctx.globalAlpha = .5;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.fillStyle = cssv("--c-dim");
+        ctx.fillText(p === 0 ? "1" : "10" + sup(p), padL-6, y);
+      }
+      const N = Math.max(2, Math.min(upTo, L));
+      const stride = Math.max(1, Math.floor(L/2000));
+      ctx.strokeStyle = cssv("--plot-stroke"); ctx.lineWidth = 2; ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < N; i += stride){
+        const x = xOf(i), y = yOf(logs[i]);
+        if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+      }
+      if ((N-1) % stride !== 0 && N >= 2){ ctx.lineTo(xOf(N-1), yOf(logs[N-1])); }
+      ctx.stroke();
+      // peak marker
+      let pk = 0; for (let i = 1; i < L; i++) if (logs[i] > logs[pk]) pk = i;
+      if (N >= pk+1){
+        const px = xOf(pk), py = yOf(logs[pk]);
+        ctx.fillStyle = cssv("--c-cream"); ctx.beginPath(); ctx.arc(px, py, 3, 0, 7); ctx.fill();
+      }
+      ctx.fillStyle = cssv("--c-dim"); ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      ctx.fillText("step →", padL+plotW/2, h-4);
+    }
+    let animId = null;
+    function animate(){
+      if (animId) cancelAnimationFrame(animId);
+      if (reduceMotion || !seq){ draw(seq ? seq.length : 0); return; }
+      let i = 2; const L = seq.length, inc = Math.max(1, Math.round(L/90));
+      (function tick(){ draw(i); i += inc; if (i < L){ animId = requestAnimationFrame(tick); } else { draw(L); animId = null; } })();
+    }
+    function compute(){
+      const n = parse();
+      if (n === null){
+        seq = null; clearCanvas();
+        $("aSteps").textContent = "—"; $("aPeak").textContent = "—"; $("aReach").textContent = "—";
+        $("aNote").innerHTML = "Enter a positive whole number.";
+        $("aLive").textContent = "";
+        return;
+      }
+      const pre = stepsToOne(n, 1000000);
+      if (pre < 0){
+        seq = null; clearCanvas();
+        $("aSteps").textContent = "> 1,000,000"; $("aPeak").textContent = "—"; $("aReach").textContent = "not yet";
+        $("aNote").innerHTML = "This start has not reached 1 within 1,000,000 steps — it is beyond the verified range (n ≤ 2⁷¹). The conjecture predicts it eventually falls; that is exactly what nobody can prove.";
+        $("aLive").textContent = "No 1 reached within one million steps.";
+        return;
+      }
+      seq = trajectory(n);                 // core, exact BigInt
+      const steps = totalStoppingTime(n);  // core
+      const peak = maxValue(n);            // core
+      logs = seq.map(log10Big);
+      $("aSteps").textContent = group(steps);
+      $("aPeak").textContent = group(peak.toString());
+      $("aReach").innerHTML = '<span style="color:' + cssv("--c-ok") + '">yes → 1</span>';
+      let ratio = "";
+      if (peak > n && peak < 1000000000000000n){ ratio = " (about " + group(Math.round(Number(peak)/Number(n))) + "× its own size)"; }
+      $("aNote").innerHTML = "Start <b>" + group(n.toString()) + "</b> reaches 1 in <b>" + group(steps) +
+        "</b> steps, peaking at <b>" + group(peak.toString()) + "</b>" + ratio + ". Held as exact big integers — nothing overflows.";
+      $("aLive").textContent = "Reaches 1 in " + steps + " steps, peak " + peak.toString() + ".";
+      draw(seq.length);
+    }
+    $("aGo").addEventListener("click", compute);
+    input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); compute(); } });
+    $("aPresets").addEventListener("click", e => { const b = e.target.closest("button[data-n]"); if (!b) return; input.value = b.dataset.n; compute(); });
+    $("aAnim").addEventListener("click", animate);
+    redraws.push(() => draw(seq ? seq.length : 0));
+    compute();
+  })();
+
+  /* ---------------- Widget B: record-setting starts ---------------- */
+  (function widgetB(){
+    const slider = $("bN");
+    let ALL_STOP = null, ALL_ALT = null, SCATTER = null;
+    function ensure(){
+      if (!ALL_STOP) ALL_STOP = totalStoppingRecords(1000000);
+      if (!ALL_ALT) ALL_ALT = altitudeRecords(100000);
+      if (!SCATTER){ SCATTER = new Array(5000); for (let n = 1; n <= 5000; n++){ let x = n, s = 0; while (x !== 1){ x = x%2===0 ? x/2 : 3*x+1; s++; } SCATTER[n-1] = s; } }
+    }
+    function fillTable(tableId, recs, N){
+      const tb = $(tableId).querySelector("tbody"); let html = "";
+      for (const r of recs){ if (r[0] > N) break; const mark = (r[0]===27||r[0]===837799) ? ' class="is-mark"' : '';
+        html += "<tr" + mark + "><td class=\"cl-mono\">" + group(r[0]) + "</td><td class=\"num cl-mono\">" + group(r[1]) + "</td></tr>"; }
+      tb.innerHTML = html;
+    }
+    function drawScatter(){
+      ensure();
+      const {ctx, w, h} = fitCanvas($("bScatter"), 0.40);
+      ctx.clearRect(0,0,w,h);
+      const M = SCATTER.length, maxS = reduxMax(SCATTER);
+      const padL = 40, padR = 12, padT = 12, padB = 28;
+      const plotW = w-padL-padR, plotH = h-padT-padB;
+      const xOf = n => padL + plotW*(n-1)/(M-1);
+      const yOf = s => padT + plotH*(1 - s/maxS);
+      ctx.font = "11px " + (cssv("--font-mono")||"monospace");
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (let g = 0; g <= 4; g++){
+        const v = Math.round(maxS*g/4), y = yOf(v);
+        ctx.strokeStyle = cssv("--c-line"); ctx.globalAlpha = .45;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.fillStyle = cssv("--c-dim"); ctx.fillText(v, padL-6, y);
+      }
+      ctx.fillStyle = cssv("--c-body"); ctx.globalAlpha = .42;
+      for (let n = 1; n <= M; n++){ ctx.fillRect(xOf(n)-0.6, yOf(SCATTER[n-1])-0.6, 1.4, 1.4); }
+      ctx.globalAlpha = 1;
+      const x27 = xOf(27), y27 = yOf(SCATTER[26]);
+      ctx.fillStyle = cssv("--c-amber"); ctx.beginPath(); ctx.arc(x27, y27, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = cssv("--c-cream"); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText("  27 → " + SCATTER[26], x27+4, y27-2);
+      ctx.fillStyle = cssv("--c-dim"); ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      ctx.fillText("starting value n  (1 … 5,000)", padL+plotW/2, h-4);
+    }
+    function render(){
+      ensure();
+      const N = Math.round(Math.pow(10, parseFloat(slider.value)));
+      $("bNOut").textContent = group(N);
+      fillTable("bStopTbl", ALL_STOP, N);
+      const altN = Math.min(N, 100000);
+      fillTable("bAltTbl", ALL_ALT, altN);
+      let nStop = 0; for (const r of ALL_STOP){ if (r[0] <= N) nStop++; }
+      let nAlt = 0; for (const r of ALL_ALT){ if (r[0] <= altN) nAlt++; }
+      $("bNote").innerHTML = "Scanning every start up to <b>" + group(N) + "</b>: <b>" + nStop +
+        "</b> total-stopping-time records" + (N > 100000
+          ? " &middot; altitude scan capped at 100,000 for speed (<b>" + nAlt + "</b> records)"
+          : " and <b>" + nAlt + "</b> altitude records") +
+        ". Computed live; <b>27</b>" + (N >= 837799 ? " and <b>837,799</b>" : "") + " highlighted.";
+    }
+    slider.addEventListener("input", render);
+    redraws.push(drawScatter);
+    drawScatter(); render();
+  })();
+
+  /* ---------------- Widget C: Terras parity bijection grid ---------------- */
+  (function widgetC(){
+    let k = 4, map = "T";
+    const grid = $("cGrid");
+    function pvec(r){
+      if (map === "T") return parityVector(r, k);
+      let m = r, v = []; for (let i = 0; i < k; i++){ v.push(m % 2); m = collatzStep(m); } return v;
+    }
+    function renderAffine(){
+      let x = 27n; for (let i = 0; i < k; i++){ x = (x & 1n) === 0n ? x/2n : (3n*x+1n)/2n; }
+      const a = numOddSteps(27, k);
+      const lhs = (1n << BigInt(k)) * x;
+      const c = lhs - (3n ** BigInt(a)) * 27n;
+      $("cAffine").innerHTML = '<span class="lbl">affine form, n = 27:</span> 2' + sup(k) + "·T" + sup(k) +
+        "(27) = " + group(lhs.toString()) + " = 3" + sup(a) + "·27 + " + group(c.toString()) +
+        '  <span class="lbl">(a = ' + a + " odd step" + (a===1?"":"s") + ")</span>";
+    }
+    function render(){
+      const n2 = 1 << k;
+      const bij = isParityBijection(k, map === "T" ? tStep : collatzStep);
+      const seen = {}, cells = [];
+      for (let r = 0; r < n2; r++){ const v = pvec(r), key = v.join(""); (seen[key] = seen[key] || []).push(r); cells.push({r, v, key}); }
+      let nCollide = 0; const hot = {};
+      for (const key in seen){ if (seen[key].length > 1){ hot[key] = true; nCollide += seen[key].length; } }
+      const vEl = $("cVerdict");
+      const mapName = map === "T" ? "the accelerated map T" : "the raw map C";
+      if (bij){
+        vEl.innerHTML = '<span class="cl-ok">For ' + mapName + ", residue → parity-vector is a bijection ℤ/2" +
+          sup(k) + " → {0,1}" + sup(k) + " — all " + n2 + " patterns distinct.</span>";
+      } else {
+        vEl.innerHTML = '<span class="cl-bad">For ' + mapName + ", it is NOT a bijection — " + nCollide +
+          " of " + n2 + " residues collide onto a shared pattern.</span>";
+      }
+      let html = "";
+      for (const c of cells){
+        html += '<div class="bij-cell' + (hot[c.key] ? " collide" : "") + '"><span class="r">' + c.r + '</span><span class="bits">';
+        for (const b of c.v) html += '<span class="bit' + (b ? " on" : "") + '" style="display:inline-block"></span>';
+        html += "</span></div>";
+      }
+      grid.innerHTML = html;
+      $("cCollideKey").hidden = !(nCollide > 0);
+      renderAffine();
+      $("cNote").innerHTML = (map === "T")
+        ? "Each of the " + n2 + " parity patterns comes from exactly one residue mod " + n2 +
+          " — the cleanest order in the whole problem. Toggle to <b>raw C</b> to watch it break."
+        : (nCollide > 0
+            ? "The raw map collides: distinct residues share a pattern, so you cannot recover n mod 2" + sup(k) +
+              " from its parities. That is why the theory uses the accelerated map T."
+            : "At k&nbsp;= 1 the lone parity bit is just n&rsquo;s own parity, so raw C still matches one&#8209;to&#8209;one. It first collides at <b>k&nbsp;= 2</b> &mdash; bump k up to watch it break.");
+    }
+    $("cK").addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (!b) return; k = +b.dataset.k; segOn($("cK"), b); render(); });
+    $("cMap").addEventListener("click", e => { const b = e.target.closest("button[data-map]"); if (!b) return; map = b.dataset.map; segOn($("cMap"), b); render(); });
+    render();
+  })();
+
+  /* ---------------- Widget D: descent sieve ---------------- */
+  (function widgetD(){
+    const slider = $("dK"), canvas = $("dCanvas");
+    function counts(k){
+      const c = new Array(k+1).fill(0);
+      if (k <= 16){ const n2 = 1 << k; for (let r = 0; r < n2; r++) c[numOddSteps(r, k)]++; return {c, empirical:true}; }
+      for (let a = 0; a <= k; a++) c[a] = binom(k, a);
+      return {c, empirical:false};
+    }
+    function amaxCalc(k){ const lim = Math.pow(2, k); let a = 0, p = 1; while (p*3 < lim){ p *= 3; a++; } return a; }
+    function drawBars(k, c){
+      const {ctx, w, h} = fitCanvas(canvas, 0.42);
+      ctx.clearRect(0,0,w,h);
+      const total = Math.pow(2, k), fr = c.map(x => x/total);
+      const ymax = (reduxMax(fr) * 1.15) || 1;
+      const padL = 22, padR = 12, padT = 14, padB = 26;
+      const plotW = w-padL-padR, plotH = h-padT-padB;
+      const m = k+1, bw = plotW/m;
+      const yOf = v => padT + plotH*(1 - v/ymax);
+      const amax = amaxCalc(k);
+      ctx.fillStyle = cssv("--c-ok"); ctx.globalAlpha = .12;
+      ctx.fillRect(padL, padT, bw*(amax+1), plotH); ctx.globalAlpha = 1;
+      for (let a = 0; a <= k; a++){
+        const x = padL + bw*a + bw*0.15, bwid = bw*0.7, y = yOf(fr[a]), descends = a <= amax;
+        ctx.fillStyle = descends ? cssv("--c-amber") : cssv("--c-dim");
+        ctx.globalAlpha = descends ? 1 : .55;
+        ctx.fillRect(x, y, bwid, padT+plotH-y);
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = cssv("--c-cream"); ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let a = 0; a <= k; a++){ const x = padL+bw*a+bw*0.5, y = yOf(binom(k,a)/total); if (a===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      ctx.stroke();
+      ctx.fillStyle = cssv("--c-cream");
+      for (let a = 0; a <= k; a++){ const x = padL+bw*a+bw*0.5, y = yOf(binom(k,a)/total); ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill(); }
+      ctx.fillStyle = cssv("--c-dim"); ctx.font = "11px " + (cssv("--font-mono")||"monospace");
+      ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const lblStep = k > 16 ? Math.ceil(k/12) : 1;
+      for (let a = 0; a <= k; a += lblStep) ctx.fillText(a, padL+bw*a+bw*0.5, h-2);
+    }
+    function render(){
+      const k = +slider.value; $("dKOut").textContent = k;
+      const {c, empirical} = counts(k);
+      let ok = true; if (empirical){ for (let a = 0; a <= k; a++){ if (c[a] !== binom(k,a)){ ok = false; break; } } }
+      $("dCheck").innerHTML = empirical
+        ? (ok ? '<span style="color:' + cssv("--c-ok") + '">exact match ✓</span>' : '<span style="color:' + cssv("--c-hot") + '">mismatch ✗</span>')
+        : "k &gt; 16 · proven identity";
+      const df = descendingClassFraction(k);
+      $("dFrac").textContent = (df[0]/df[1]*100).toFixed(2) + "%";
+      $("dThr").innerHTML = "a ≤ " + amaxCalc(k) + "  <span style=\"color:" + cssv("--c-dim") + "\">(≈0.6309k)</span>";
+      drawBars(k, c);
+      $("dNote").innerHTML = "Bars: the exact number of residues mod 2" + sup(k) + " with each odd-step count a " +
+        (empirical ? "(enumerated all 2" + sup(k) + " classes)" : "(via the proven C(k,a) identity)") +
+        ". The white curve is Binomial(k, ½) — they coincide, which is Terras's theorem. Shaded: classes that <b>provably descend</b> within " + k + " steps.";
+    }
+    (function(){
+      const surv = minCounterexampleSurvivors(5); let html = "";
+      for (const r of surv) html += '<span class="col-chip col-chip--min">' + r + "</span>";
+      $("dSurv").innerHTML = html;
+      $("dSurvNote").innerHTML = "<b>" + surv.length + " of 32</b> classes survive: {" + surv.join(", ") +
+        "}. Every other class mod 32 already descends, so a smallest counterexample (if any exists) must be ≡ one of these mod 32.";
+    })();
+    slider.addEventListener("input", render);
+    redraws.push(render);
+    render();
+  })();
+
+  /* ---------------- Widget E: sibling maps (cycles & divergence) ---------------- */
+  (function widgetE(){
+    let map = "C";
+    const stepOf = {C: collatzStep, M: step3nMinus1, P: step5nPlus1};
+    const nameOf = {C: "3n + 1", M: "3n − 1", P: "5n + 1"};
+    function safeOrbit(start, step){
+      const seen = new Map(), path = []; let m = start; const CAP = 100000;
+      for (let i = 0; i < CAP; i++){
+        if (!Number.isSafeInteger(m) || Math.abs(m) > 9e15) return {diverge:true, reason:"grew", steps:i, path};
+        if (seen.has(m)){ const cyc = path.slice(seen.get(m)); const lo = reduxMin(cyc); const j = cyc.indexOf(lo);
+          return {cycle: cyc.slice(j).concat(cyc.slice(0, j)), enter: seen.get(m), path}; }
+        seen.set(m, i); path.push(m); m = step(m);
+        if (m <= 0) return {diverge:true, reason:"nonpos", steps:i, path};
+      }
+      return {diverge:true, reason:"cap", steps:CAP, path};
+    }
+    function chips(arr, lo){
+      let html = "";
+      for (let i = 0; i < arr.length; i++){
+        html += '<span class="' + (arr[i]===lo ? "col-chip col-chip--min" : "col-chip") + '">' + group(arr[i]) + "</span>";
+        if (i < arr.length-1) html += '<span class="col-arrow">→</span>';
+      }
+      return html;
+    }
+    function trace(){
+      const t = ($("eN").value||"").trim().replace(/[, _]/g, "");
+      if (!/^[0-9]+$/.test(t) || +t < 1){
+        $("eVerdict").innerHTML = '<span class="cl-bad">Enter a positive whole number.</span>';
+        $("eCycle").innerHTML = ""; $("eNote").textContent = ""; return;
+      }
+      const start = +t;
+      if (start > 1e9){
+        $("eVerdict").innerHTML = '<span class="cl-bad">Keep the start ≤ 1,000,000,000 here.</span>';
+        $("eCycle").innerHTML = "";
+        $("eNote").innerHTML = "This tracer uses fast 53-bit arithmetic. For very large starts, use the exact big-integer plotter in §1.";
+        return;
+      }
+      const res = safeOrbit(start, stepOf[map]);
+      if (res.cycle){
+        const cyc = findCycle(start, stepOf[map]) || res.cycle;   // core function (safe: orbit is bounded)
+        const lo = reduxMin(cyc), reach = res.path.indexOf(lo);   // steps until it first hits the cycle's min
+        $("eVerdict").innerHTML = '<span class="cl-ok">' + nameOf[map] + " from " + group(start) +
+          " falls into a cycle of length " + cyc.length + ".</span>";
+        $("eCycle").innerHTML = chips(cyc, lo) + '<span class="col-arrow">↺</span>';
+        let extra = "";
+        if (map === "C") extra = " Under 3n+1 every start ever tested funnels into this one cycle {1, 2, 4} — proving it always does is the conjecture.";
+        if (map === "P") extra = " 5n+1 has more than one cycle — this one need not contain 1.";
+        $("eNote").innerHTML = (reach === 0
+          ? "The start <b>" + group(start) + "</b> already sits on the cycle"
+          : "Reaches the cycle&rsquo;s smallest value <b>" + group(lo) + "</b> after <b>" + reach + "</b> step" + (reach===1?"":"s")) +
+          "; cycle length <b>" + cyc.length + "</b> (shown from its smallest element)." + extra;
+      } else {
+        $("eVerdict").innerHTML = '<span class="cl-bad">' + nameOf[map] + " from " + group(start) +
+          ": no cycle found — still climbing.</span>";
+        const head = res.path.slice(0, 10);
+        $("eCycle").innerHTML = head.map((v,i) => '<span class="col-chip">' + group(v) + "</span>" +
+          (i < head.length-1 ? '<span class="col-arrow">→</span>' : "")).join("") + '<span class="col-arrow">→ …</span>';
+        const why = res.reason === "grew"
+          ? "the value shot past 9×10¹⁵ (the exact-integer limit here) after " + res.steps + " steps"
+          : "no repeat appeared within " + group(res.steps) + " steps";
+        $("eNote").innerHTML = "The orbit " + why + ". The 5n+1 map is <i>believed</i> to send most starts to infinity — but divergence here is <b>observed, not proven</b>.";
+      }
+    }
+    (function(){
+      const rc = rationalCycle([1,0,1,1,0,0,1]); let html = "";
+      for (let i = 0; i < rc.length; i++){ html += '<span class="col-chip' + (i===0 ? " col-chip--min" : "") + '">' + rc[i] + "</span>" + '<span class="col-arrow">→</span>'; }
+      html += '<span class="col-chip col-chip--min">' + rc[0] + "</span>";
+      $("eRat").innerHTML = html;
+    })();
+    $("eMap").addEventListener("click", e => { const b = e.target.closest("button[data-map]"); if (!b) return; map = b.dataset.map; segOn($("eMap"), b); trace(); });
+    $("eGo").addEventListener("click", trace);
+    $("eN").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); trace(); } });
+    $("ePresets").addEventListener("click", e => {
+      const b = e.target.closest("button[data-n]"); if (!b) return;
+      map = b.dataset.map; $("eN").value = b.dataset.n;
+      const mb = [...$("eMap").querySelectorAll("button")].find(x => x.dataset.map === map);
+      if (mb) segOn($("eMap"), mb);
+      trace();
+    });
+    trace();
+  })();
+
+  /* ---- redraw canvases on resize (debounced) ---- */
+  let rt = null;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { for (const f of redraws) try { f(); } catch(e){} }, 160); });
+})();
+</script>
+</body>
+</html>

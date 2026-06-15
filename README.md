@@ -31,6 +31,7 @@ and from a tiny, readable code repo.
 | 02 | **Rule 30: Is it random?** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/rule30/) | ✅ shipped & verified |
 | 03 | **The Hat: one shape that never repeats** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/monotile/) | ✅ shipped & verified |
 | 04 | **Benford's Law: why the digit 1 is not fair** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/benford/) | ✅ shipped & verified |
+| 05 | **The 3n+1 problem: a rule too simple to solve** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/collatz/) | ✅ shipped & verified |
 
 ### #01 — The Abelian Sandpile
 One kindergarten rule about falling sand hides an algebraic group, a fractal "zero," and a number you can
@@ -75,6 +76,22 @@ two-digit frequencies and the second-digit distribution (mean ≈ 4.187) — and
 reproduced by `verify.py` (Python **standard library only** — no dependencies) plus a Node cross-check of the
 page's own JavaScript.
 
+### #05 — The 3n+1 problem: a rule too simple to solve
+Halve the evens, triple-and-add-one the odds, repeat — and every number ever tried (now **all** of them up to
+**2⁷¹ ≈ 2.36×10²¹**, Barina 2025) crashes to 1, yet nobody can prove it always does. The page plots the wild
+"hailstone" climbs on exact big integers (27 needs **111** steps and peaks at **9,232**; 837,799 takes **524**
+and peaks near **3 billion** — the last of **44** record-setters below a million, matching OEIS A006877/A006884).
+Then it shows the exact **skeleton** under the chaos: **Terras's parity-vector bijection** — the residue
+*n* mod 2ᵏ determines, and is determined by, the first *k* parity bits — which we verify holds for the
+accelerated map **T** (k = 1…14) and *fails* for the raw map **C** (k = 2…8). From there the **descent sieve**
+(odd-step counts distributed exactly Binomial(k, ½), via Terras's count) explains why *almost every* number
+falls, and the sibling maps **3n−1** (which cycles) and **5n+1** (which cycles *and* seems to diverge) show why
+the "3" and the "+1" are finely balanced. The page is scrupulous about **proven-by-code vs. cited vs. open**: the
+conjecture itself stays **open**; Terras density-1, Tao (2022), Krasikov–Lagarias (x^0.84), and the cycle bounds
+(Eliahou, Hercher) are **cited**; everything else is recomputed two ways (a stdlib `verify.py` = **31 checks** and
+a Node cross-check `test_core.mjs` = **23 checks**, including a guard that the page inlines the tested engine
+byte-for-byte).
+
 ## Reproduce every number yourself
 
 ```bash
@@ -117,6 +134,19 @@ python3 code/benford/verify.py
 
 # Run the EXACT JavaScript core shipped on the Benford page, in Node, vs. Python
 node code/benford/test_core.mjs
+
+# --- Lab #05 — Collatz / 3n+1 ---
+# Python checks (STANDARD LIBRARY ONLY — no pip): 27→111 steps/peak 9232 and 837,799→524/
+# 2,974,984,576; 44 total-stopping & altitude records below 1e6 == OEIS A006877/8, A006884/5;
+# Terras parity bijection holds for T (k=1..14), FAILS for raw C (k=2..8); descent sieve ==
+# Binomial(k,1/2); survivors mod 32 == {7,15,27,31}; rational cycle 151/47; 3n-1 & 5n+1 cycles
+python3 code/collatz/verify.py        # -> 31 checks passed
+
+# Run the EXACT JavaScript engine shipped on the page, in Node, vs. Python (value-by-value),
+# plus a guard that the page inlines that engine byte-for-byte (copy the page in first):
+cp docs/collatz/index.html code/collatz/index.html
+node code/collatz/test_core.mjs       # -> 23 passed, 0 failed
+rm code/collatz/index.html
 ```
 
 Exact sandpile-group orders for the n×n grid (= number of spanning trees = det of the reduced Laplacian),
@@ -145,6 +175,7 @@ docs/                      # the live site (GitHub Pages serves from here)
   monotile/img/            #   computed hero figures
   benford/index.html       #   experiment #04
   benford/img/             #   computed hero figures
+  collatz/index.html       #   experiment #05 (canvas-only — every figure is rendered live)
 code/sandpile/
   sandpile.py              # core model: stabilise, identity, recurrent test, exact determinant
   verify.py                # one-command reproduction of every headline claim
@@ -177,6 +208,15 @@ code/benford/
   country_data.js          # the 244 country areas used by the live demo (mirror of data/)
   data/country_areas.json  # sourced country-area dataset (provenance + licence inside)
   facts.md                 # sourced facts, caveats and references
+code/collatz/
+  collatz.py               # core engine: C & T maps, trajectories, records, parity bijection, sieve, cycles
+  verify.py                # 31 checks — Python STANDARD LIBRARY ONLY (records cross-checked vs OEIS)
+  core.js                  # dependency-free JS engine (byte-identical to the page's inlined copy)
+  test_core.mjs            # 23 checks: runs the page's own JS engine under Node, vs. Python, + byte-identity guard
+  figures.py               # regenerates supplementary figures (the live page renders its own)
+  facts.md                 # sourced facts, caveats and references
+  facts.json               # exact display-number snapshot used by the page
+  img/                     # supplementary computed figures (not embedded — the page is canvas-only)
 ```
 
 ## Why a "determinant = number of spanning trees"?
