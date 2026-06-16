@@ -1,0 +1,51 @@
+{
+  "title": "Langton's ant -- pinned display numbers (Computational Curiosity Lab #6)",
+  "convention": "white -> turn RIGHT (+90 clockwise on a y-down screen), flip to black, step; black -> turn LEFT (-90), flip to white, step. x east, y DOWN; ant starts at the origin facing UP on an all-white grid.",
+  "period": 104,
+  "period_fails": 52,
+  "drift": {
+    "dx": -2,
+    "dy": 2,
+    "mag2": 8,
+    "mag_exact": "2*sqrt(2)",
+    "mag_approx": 2.8284271,
+    "direction": "down-left",
+    "direction_note": "sign is convention-dependent: chirality flips x, y-up/down flips y; the magnitude 2*sqrt(2) and period 104 are not."
+  },
+  "cells_per_period": 12,
+  "onset_step": 9977,
+  "onset_label": "about 10,000 (about 10^4)",
+  "onset_detector": "first step from which the 104-step displacement signature (constant drift + repeating heading) holds for all later steps up to a 20,000-step horizon",
+  "symmetric_phase_steps": 500,
+  "phases": ["~500 steps roughly symmetric", "~chaotic until about 10,000 steps", "periodic highway thereafter"],
+  "signatures": {
+    "_format": "[x, y, dir(0=Up,1=Right,2=Down,3=Left), black_count, hash]; hash = polynomial over lexicographically-sorted black cells mod 2147483647",
+    "5000": [2, 10, 0, 344, 10414236],
+    "12000": [-56, 32, 0, 952, 1781243839]
+  },
+  "turmites": {
+    "convention": "the i-th letter of the rule-string is the turn on a cell of colour i (colours cycle 0,1,...,n-1,0 as the ant leaves); R = right (+90), L = left (-90)",
+    "langton": "RL",
+    "langton_note": "colour 0 = white -> R, colour 1 = black -> L; same ant as the two-colour rule above",
+    "proven_symmetric": ["LLRR", "RLLR", "LRRL"],
+    "proven_symmetric_note": "rule-strings whose cyclic form splits into LL/RR pairs return to bilateral symmetry infinitely often (Gale-Propp-Sutherland-Troubetzkoy 1995)",
+    "symmetric_examples_first": {"LLRR": 18, "RLLR": 14, "LRRL": 14},
+    "symmetric_examples_first_note": "first step at which the coloured field (>= 8 coloured cells) is bilaterally symmetric; the >= 8 floor skips the trivially-symmetric first few steps, so these integers are detector-dependent, not invariants. The CITED invariant is only that symmetry recurs infinitely often.",
+    "chaotic_open": ["RLR"],
+    "chaotic_open_note": "grows chaotically; not known whether it ever builds a highway (Wikipedia) -- empirical/open",
+    "empirical_catalog": {"LRRRRRLLR": "fills a square region around itself (observation, not a theorem)"}
+  },
+  "checks": {
+    "verify_py": 30,
+    "test_core_mjs": 19,
+    "note": "verify.py prints 'RESULT: 30 checks passed. VERIFICATION PASSED.'; test_core.mjs prints 'RESULT: 19 passed, 0 failed.' The page (header pill, section 8, footer) states the same two counts; test_core.mjs check 19 is the byte-identity guard that the LANGTON_CORE region inlined into index.html matches core.js exactly."
+  },
+  "sources": [
+    "Langton, C. G. (1986). Studying artificial life with cellular automata. Physica D 22, 120-149. doi:10.1016/0167-2789(86)90237-X",
+    "Bunimovich, L. A. & Troubetzkoy, S. E. (1992). Recurrence properties of Lorentz lattice gas cellular automata. J. Stat. Phys. 67, 289-302. doi:10.1007/BF01049035",
+    "Troubetzkoy, S. (1997). Lewis-Parker lecture: the ant. Alabama J. Math. 21(2).",
+    "Gale, D., Propp, J., Sutherland, S. & Troubetzkoy, S. (1995). Further Travels with My Ant. Math. Intelligencer 17(3), 48-56. arXiv:math/9501233",
+    "Gajardo, A., Moreira, A. & Goles, E. (2002). Complexity of Langton's ant. Discrete Appl. Math. 117, 41-50. doi:10.1016/S0166-218X(00)00334-6; arXiv:nlin/0306022",
+    "Stewart, I. (1994). The ultimate in anty-particles. Sci. Am. 271(1), 104-107. (Origin of the disputed 'Cohen-Kung' name for the unboundedness theorem; the peer-reviewed result of record is Bunimovich-Troubetzkoy 1992.)"
+  ]
+}

@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Langton's ant: order out of chaos &middot; Curiosity Lab #6</title>
+<meta name="description" content="An interactive, verified explorable on Langton's ant. A two-state, two-turn rule wanders in apparent chaos for about 10,000 steps and then, forever after, builds a periodic diagonal highway. Watch it live in your browser, measure the highway (period 104 steps, drift 2&radic;2 per period, +12 black cells per period), see the update run backwards exactly (it is reversible), and explore multi-colour turmites. Proven-by-code vs cited vs open vs empirical, flagged; 30 + 19 checks.">
+<style>
+/* ============================================================================
+   Curiosity Lab — design tokens
+   Single source of truth for color, type, spacing, radius, shadow, motion.
+   Self-contained: no @import, no remote fonts, no build step.
+
+   Themes
+   ------
+   • Default (:root)                  → LIGHT  (warm paper)
+   • @media (prefers-color-scheme:dark) → DARK  (the established brand)
+   • Authors may PIN a theme with  <html data-theme="dark">  or  "light".
+     The data-theme rules win over the media query.
+
+   The dark values are the exact brand palette from Lab #1 (sandpile) — this is
+   an evolution, not a repaint. Light is a new, contrast-checked companion.
+   All text tokens meet WCAG AA (≥4.5:1) on their intended surfaces; most clear
+   AAA. The raw amber --c-amber is a NON-TEXT accent (fills, borders, dataviz);
+   use --c-link / --c-accent-ink for text on light.
+   ============================================================================ */
+
+:root{
+  color-scheme: light dark;
+
+  /* ---- Type families (system stacks — zero network) ---------------------- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+               "Liberation Mono", monospace;
+
+  /* ---- Fluid type scale (16px base; headings clamp for mobile-first) ----- */
+  --text-2xs: .6875rem;   /* 11px — micro labels      */
+  --text-xs:  .75rem;     /* 12px — kicker, tags      */
+  --text-sm:  .8125rem;   /* 13px — hints, captions   */
+  --text-md:  .875rem;    /* 14px — controls, footer  */
+  --text-base:1rem;       /* 16px — body              */
+  --text-lg:  1.125rem;   /* 18px — lead / subtitle   */
+  --text-xl:  clamp(1.25rem, 1.05rem + 1vw, 1.625rem);  /* h2  ~20→26 */
+  --text-2xl: clamp(1.875rem, 1.3rem + 2.6vw, 3.25rem); /* h1  ~30→52 */
+
+  --leading-tight: 1.12;
+  --leading-snug:  1.3;
+  --leading-body:  1.65;   /* readable measure rhythm */
+
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-bold:   700;
+  --weight-black:  800;
+
+  --tracking-kicker: .22em;
+  --tracking-tight: -.01em;
+
+  --measure: 65ch;         /* readable line length cap */
+
+  /* ---- Spacing rhythm (4px base grid) ------------------------------------ */
+  --space-0: 0;
+  --space-1: .25rem;   /* 4  */
+  --space-2: .5rem;    /* 8  */
+  --space-3: .75rem;   /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.25rem;  /* 20 */
+  --space-6: 1.5rem;   /* 24 */
+  --space-8: 2rem;     /* 32 */
+  --space-10: 2.75rem; /* 44 */
+  --space-12: 3.5rem;  /* 56 */
+  --space-16: 4.5rem;  /* 72 */
+
+  --container: 880px;  /* page max-width (matches umbrella landing) */
+  --container-narrow: 720px;
+
+  /* ---- Radius ------------------------------------------------------------ */
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Control geometry -------------------------------------------------- */
+  --control-h: 2.5rem;     /* 40px — comfortable tap target */
+  --tap-min: 44px;         /* WCAG 2.5.5 target floor       */
+  --border: 1px;
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(.2,.6,.3,1);
+  --dur-fast: .12s;
+  --dur: .18s;
+  --dur-slow: .32s;
+
+  /* ===================== LIGHT theme (default) ===================== */
+  /* surfaces */
+  --c-bg:        #f7f4ee;   /* warm paper                     */
+  --c-bg-grad-a: #fbf6ea;   /* subtle radial wash (optional)  */
+  --c-bg-grad-b: #f1eee6;
+  --c-surface:   #ffffff;   /* raised card / panel            */
+  --c-surface-2: #f1ece1;   /* recessed / segmented controls  */
+  --c-inset:     #f3eee2;   /* code / eq / table heads        */
+  --c-line:      #e2dccc;   /* hairline borders               */
+  --c-line-strong:#d3ccba;
+
+  /* text */
+  --c-ink:    #19202f;      /* headings / strong  14.8:1      */
+  --c-body:   #2b3344;      /* body copy          11.5:1      */
+  --c-dim:    #586274;      /* secondary / hints   5.6:1      */
+  --c-on-accent:#2b1c08;    /* text on amber fill  7.8:1      */
+
+  /* brand accents */
+  --c-amber:     #f0a249;   /* NON-TEXT: fills, borders, dataviz */
+  --c-amber-soft:#f7d8a8;
+  --c-link:      #9a5410;   /* links / accent text 5.2:1      */
+  --c-link-hover:#7d420a;
+  --c-teal:      #2d7a98;   /* NON-TEXT accent / borders      */
+  --c-teal-ink:  #1d5d73;   /* teal text          6.7:1       */
+  --c-cream:     #8a5a10;   /* "cream" role → warm strong text on light */
+
+  /* state */
+  --c-ok:      #1c7a52;     /* 4.8:1  */
+  --c-warn-ink:#8a5a10;     /* caveat text/heading 5.4:1 */
+  --c-warn-edge:#d9a441;    /* caveat left border / accent */
+  --c-warn-bg: #fbf2dd;     /* caveat fill */
+  --c-info-edge:#2d7a98;    /* note left border */
+  --c-info-bg: #ecf3f6;     /* note fill */
+  --c-hot:     #c0392b;     /* alert / "bad" text 4.9:1 */
+
+  /* code on inset */
+  --c-code-ink:#8a3d00;
+
+  /* focus + selection */
+  --c-focus:   #1d5d73;     /* visible focus ring */
+  --c-focus-halo: rgba(29,93,115,.28);
+  --c-select-bg: #f7d8a8;
+  --c-select-fg: #19202f;
+
+  /* shadows (soft on paper) */
+  --shadow-sm: 0 1px 2px rgba(25,32,47,.06);
+  --shadow-md: 0 4px 14px rgba(25,32,47,.08);
+  --shadow-lg: 0 12px 32px rgba(25,32,47,.12);
+
+  /* dataviz ramp (sand heights 0..3 + hot) — identical hues both themes */
+  --viz-0: #c9d2e4;  /* low (light needs a visible "empty") */
+  --viz-1: #2d7a98;
+  --viz-2: #f0a249;
+  --viz-3: #b9892f;  /* "cream" reads as bright on dark; darken for light */
+  --viz-hot:#ff785a;
+  --viz-axis: #b6ad99;
+  --viz-line: #9a5410;
+}
+
+/* ===================== DARK theme — the established brand ===================== */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-bg:        #0e1320;
+    --c-bg-grad-a: #16223b;
+    --c-bg-grad-b: #1a1c33;
+    --c-surface:   #161d2e;
+    --c-surface-2: #1d2638;
+    --c-inset:     #0c1220;
+    --c-line:      #2a3550;
+    --c-line-strong:#3a4a6e;
+
+    --c-ink:    #e8ecf5;   /* 15.7:1 */
+    --c-body:   #dbe2f0;   /* 14.3:1 */
+    --c-dim:    #9aa6bd;   /*  7.6:1 */
+    --c-on-accent:#1a1205; /*  8.8:1 on amber */
+
+    --c-amber:     #f0a249;
+    --c-amber-soft:#5a3d1a;
+    --c-link:      #f0a249; /* 8.8:1 on bg */
+    --c-link-hover:#ffc07a;
+    --c-teal:      #2d7a98;
+    --c-teal-ink:  #6fb6d0; /* lighter teal reads as text on dark */
+    --c-cream:     #faf1d9; /* 16.5:1 */
+
+    --c-ok:      #5fd0a0;   /* 9.7:1 */
+    --c-warn-ink:#ffd166;   /* 12.9:1 */
+    --c-warn-edge:#ffd166;
+    --c-warn-bg: #2a1d12;
+    --c-info-edge:#2d7a98;
+    --c-info-bg: #15233a;
+    --c-hot:     #ff785a;   /* 7.1:1 */
+
+    --c-code-ink:#ffd9a8;
+
+    --c-focus:   #ffc985;
+    --c-focus-halo: rgba(240,162,73,.35);
+    --c-select-bg: #2d7a98;
+    --c-select-fg: #ffffff;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+    --shadow-lg: 0 14px 38px rgba(0,0,0,.55);
+
+    --viz-0: #1a213a;
+    --viz-1: #2d7a98;
+    --viz-2: #f0a249;
+    --viz-3: #faf1d9;
+    --viz-hot:#ff785a;
+    --viz-axis: #2a3550;
+    --viz-line: #f0a249;
+  }
+}
+
+/* ===================== Author-pinned themes ===================== */
+/* <html data-theme="dark"> forces dark regardless of OS preference. */
+:root[data-theme="dark"]{
+  --c-bg:#0e1320; --c-bg-grad-a:#16223b; --c-bg-grad-b:#1a1c33;
+  --c-surface:#161d2e; --c-surface-2:#1d2638; --c-inset:#0c1220;
+  --c-line:#2a3550; --c-line-strong:#3a4a6e;
+  --c-ink:#e8ecf5; --c-body:#dbe2f0; --c-dim:#9aa6bd; --c-on-accent:#1a1205;
+  --c-amber:#f0a249; --c-amber-soft:#5a3d1a; --c-link:#f0a249; --c-link-hover:#ffc07a;
+  --c-teal:#2d7a98; --c-teal-ink:#6fb6d0; --c-cream:#faf1d9;
+  --c-ok:#5fd0a0; --c-warn-ink:#ffd166; --c-warn-edge:#ffd166; --c-warn-bg:#2a1d12;
+  --c-info-edge:#2d7a98; --c-info-bg:#15233a; --c-hot:#ff785a; --c-code-ink:#ffd9a8;
+  --c-focus:#ffc985; --c-focus-halo:rgba(240,162,73,.35);
+  --c-select-bg:#2d7a98; --c-select-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 8px 24px rgba(0,0,0,.45);
+  --shadow-lg:0 14px 38px rgba(0,0,0,.55);
+  --viz-0:#1a213a; --viz-1:#2d7a98; --viz-2:#f0a249; --viz-3:#faf1d9;
+  --viz-hot:#ff785a; --viz-axis:#2a3550; --viz-line:#f0a249;
+}
+/* data-theme="light" simply keeps the :root defaults; declared for symmetry. */
+:root[data-theme="light"]{ color-scheme: light; }
+:root[data-theme="dark"]{ color-scheme: dark; }
+/* ============================================================================
+   Curiosity Lab — component layer
+   Requires tokens.css (loaded first). Self-contained: no external assets.
+   All components are namespaced `cl-` so this file is droppable into any
+   explorable without clobbering page-specific styles.
+
+   Load order:
+     <link rel="stylesheet" href="tokens.css">
+     <link rel="stylesheet" href="components.css">
+   ============================================================================ */
+
+/* ------------------------------------------------------------------ reset-lite */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+::selection{ background:var(--c-select-bg); color:var(--c-select-fg); }
+
+/* ------------------------------------------------------------------- page shell */
+.cl-body{
+  margin:0;
+  background:var(--c-bg);
+  color:var(--c-body);
+  font-family:var(--font-sans);
+  font-size:var(--text-base);
+  line-height:var(--leading-body);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+/* optional ambient wash — calm, never busy. Drop class `cl-body--wash`. */
+.cl-body--wash{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, var(--c-bg-grad-a) 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, var(--c-bg-grad-b) 0%, transparent 55%),
+    var(--c-bg);
+  background-attachment:fixed;
+}
+.cl-wrap{ max-width:var(--container); margin:0 auto; padding:0 var(--space-5) var(--space-16); }
+.cl-wrap--narrow{ max-width:var(--container-narrow); }
+
+/* ----------------------------------------------------------------------- links */
+.cl-body a,a.cl-link{ color:var(--c-link); text-decoration:none;
+  text-underline-offset:.14em; text-decoration-thickness:from-font; }
+.cl-body a:hover,a.cl-link:hover{ color:var(--c-link-hover); text-decoration:underline; }
+
+/* ------------------------------------------------------------- focus (global) */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--c-focus);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+/* mouse users don't get the ring; keyboard users always do */
+
+/* --------------------------------------------------------------- typography */
+.cl-kicker{
+  display:inline-block;
+  letter-spacing:var(--tracking-kicker); text-transform:uppercase;
+  font-size:var(--text-xs); font-weight:var(--weight-bold); color:var(--c-link);
+}
+.cl-title{ font-size:var(--text-2xl); line-height:var(--leading-tight);
+  letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:.18em 0 .14em; font-weight:var(--weight-black); }
+.cl-subtitle{ color:var(--c-dim); font-size:var(--text-lg); max-width:var(--measure); margin:0; }
+.cl-h2{ font-size:var(--text-xl); letter-spacing:var(--tracking-tight); color:var(--c-ink);
+  margin:var(--space-12) 0 var(--space-2); font-weight:var(--weight-bold); }
+.cl-h3{ font-size:var(--text-lg); color:var(--c-cream); margin:var(--space-6) 0 var(--space-1);
+  font-weight:var(--weight-bold); }
+.cl-h2 .cl-section-num{ color:var(--c-link); font-variant-numeric:tabular-nums; margin-right:.4em; }
+.cl-lead{ font-size:var(--text-lg); color:var(--c-body); }
+.cl-prose{ max-width:var(--measure); }
+.cl-prose p{ margin:var(--space-3) 0; color:var(--c-body); }
+
+/* ----------------------------------------------------------------- header/footer */
+.cl-header{ padding:var(--space-16) 0 var(--space-6); }
+.cl-header--ruled{ border-bottom:var(--border) solid var(--c-line); margin-bottom:var(--space-2); }
+.cl-footer{ margin-top:var(--space-16); border-top:var(--border) solid var(--c-line);
+  padding-top:var(--space-5); color:var(--c-dim); font-size:var(--text-md); }
+.cl-footer b{ color:var(--c-ink); }
+
+/* --------------------------------------------------------------------- pills */
+.cl-pill{ display:inline-block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-pill); padding:3px 11px; font-size:var(--text-xs);
+  color:var(--c-dim); margin:0 6px 6px 0; }
+.cl-pill b{ color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* ----------------------------------------------------------- tags (status) */
+.cl-tag{ font-size:var(--text-2xs); letter-spacing:.12em; text-transform:uppercase;
+  font-weight:var(--weight-bold); border-radius:var(--radius-pill); padding:3px 9px;
+  border:var(--border) solid var(--c-line); color:var(--c-dim); }
+.cl-tag--live{ color:var(--c-proven-ink); border-color:color-mix(in srgb,var(--c-ok) 45%,transparent);
+  background:color-mix(in srgb,var(--c-ok) 12%,transparent); }
+.cl-tag--soon{ color:var(--c-dim); }
+
+/* ----------------------------------------------------------------- panels */
+.cl-panel{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-5); margin:var(--space-5) 0;
+  box-shadow:var(--shadow-sm); }
+
+/* ---------------------------------------------------------------- cards (index) */
+.cl-card-grid{ display:grid; grid-template-columns:1fr; gap:var(--space-5); margin:var(--space-5) 0; }
+.cl-card{ display:block; background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-xl); overflow:hidden; color:inherit; box-shadow:var(--shadow-sm);
+  transition:transform var(--dur) var(--ease), border-color var(--dur) var(--ease),
+             box-shadow var(--dur) var(--ease); }
+.cl-card__strip{ height:8px;
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber),var(--c-amber-soft)); }
+.cl-card__body{ padding:var(--space-5) var(--space-6); }
+.cl-card__row{ display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-1); }
+.cl-card__no{ font-variant-numeric:tabular-nums; color:var(--c-link);
+  font-weight:var(--weight-black); font-size:var(--text-md); letter-spacing:.08em; }
+.cl-card__title{ margin:2px 0 6px; font-size:var(--text-xl); letter-spacing:var(--tracking-tight);
+  color:var(--c-ink); font-weight:var(--weight-bold); }
+.cl-card p{ margin:0; color:var(--c-dim); font-size:var(--text-md); }
+.cl-card__cta{ margin-top:var(--space-3); color:var(--c-link); font-weight:var(--weight-bold);
+  font-size:var(--text-md); }
+a.cl-card:hover{ border-color:var(--c-amber); transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.cl-card--soon{ opacity:.72; }
+.cl-card--soon:hover{ border-color:var(--c-line); transform:none; box-shadow:var(--shadow-sm); }
+
+/* --------------------------------------------------- "house rules" mini-grid */
+.cl-rules{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin:var(--space-5) 0; }
+.cl-rule{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-lg); padding:var(--space-4); }
+.cl-rule h3{ margin:0 0 4px; font-size:var(--text-md); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-rule p{ margin:0; font-size:var(--text-md); color:var(--c-dim); }
+@media(max-width:620px){ .cl-rules{ grid-template-columns:1fr; } }
+
+/* ===================================================================== CALLOUTS
+   Two semantic boxes that carry the Lab's honesty contract.
+   .cl-note    — neutral aside / context (teal).
+   .cl-caveat  — uncertainty / "what we did NOT verify" (amber). NEVER hide it.
+   Visual polish must never bury a caveat: it gets its own strong edge + label.
+   =========================================================================== */
+.cl-note{ background:var(--c-info-bg); border:var(--border) solid var(--c-info-edge);
+  border-left:3px solid var(--c-info-edge); border-radius:var(--radius-md);
+  padding:var(--space-3) var(--space-4); margin:var(--space-4) 0; color:var(--c-body); }
+
+.cl-caveat{ background:var(--c-warn-bg); border:var(--border) solid var(--c-warn-edge);
+  border-left:4px solid var(--c-warn-edge); border-radius:var(--radius-md);
+  padding:var(--space-4); margin:var(--space-5) 0; color:var(--c-body); }
+.cl-caveat > b:first-child,.cl-caveat .cl-caveat__label{ color:var(--c-warn-ink); }
+.cl-caveat__label{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  color:var(--c-warn-ink); margin:0 0 var(--space-1); }
+/* a small ⚠ glyph rendered from CSS so no icon font is needed */
+.cl-caveat__label::before{ content:"⚠"; font-size:1.05em; line-height:1; }
+.cl-caveat ul{ margin:var(--space-2) 0 0; padding-left:1.25em; }
+.cl-caveat li{ margin:.3em 0; }
+
+/* ===================================================================== CONTROLS */
+.cl-controls{ display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; margin:var(--space-2) 0 var(--space-1); }
+
+.cl-btn{ background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:0 var(--space-3); min-height:var(--control-h);
+  font:var(--weight-medium) var(--text-md)/1 var(--font-sans); cursor:pointer;
+  display:inline-flex; align-items:center; gap:.4em;
+  transition:border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+             background var(--dur-fast) var(--ease); }
+.cl-btn:hover{ border-color:var(--c-amber); color:var(--c-ink); }
+.cl-btn.is-on,.cl-btn[aria-pressed="true"]{ background:var(--c-amber); color:var(--c-on-accent);
+  border-color:var(--c-amber); }
+.cl-btn:disabled,.cl-btn[aria-disabled="true"]{ opacity:.45; cursor:not-allowed; }
+
+/* segmented control */
+.cl-seg{ display:inline-flex; border:var(--border) solid var(--c-line); border-radius:var(--radius-md);
+  overflow:hidden; }
+.cl-seg .cl-btn{ border:none; border-radius:0; border-right:var(--border) solid var(--c-line); }
+.cl-seg .cl-btn:last-child{ border-right:none; }
+
+.cl-hint{ color:var(--c-dim); font-size:var(--text-sm); margin:var(--space-2) 0 0; }
+
+/* slider + label control --------------------------------------------------- */
+.cl-control{ display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; margin:var(--space-2) 0; }
+.cl-control__label{ font-size:var(--text-md); color:var(--c-dim); font-weight:var(--weight-medium);
+  min-width:7ch; }
+.cl-control__value{ font-variant-numeric:tabular-nums; color:var(--c-cream);
+  font-weight:var(--weight-bold); font-size:var(--text-md); min-width:5ch; text-align:right; }
+.cl-range{ -webkit-appearance:none; appearance:none; width:100%; max-width:18rem; height:var(--tap-min);
+  background:transparent; cursor:pointer; }
+/* track */
+.cl-range::-webkit-slider-runnable-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+.cl-range::-moz-range-track{ height:6px; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--c-teal),var(--c-amber)); }
+/* thumb */
+.cl-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:20px; height:20px;
+  margin-top:-7px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range::-moz-range-thumb{ width:20px; height:20px; border-radius:50%; background:var(--c-surface);
+  border:2px solid var(--c-amber); box-shadow:var(--shadow-sm); }
+.cl-range:focus-visible{ outline:none; }
+.cl-range:focus-visible::-webkit-slider-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+.cl-range:focus-visible::-moz-range-thumb{ box-shadow:0 0 0 4px var(--c-focus-halo); }
+
+/* checkbox label inline */
+.cl-check{ display:inline-flex; align-items:center; gap:.5em; color:var(--c-dim);
+  font-size:var(--text-sm); min-height:var(--tap-min); }
+.cl-check input{ accent-color:var(--c-amber); width:1.05em; height:1.05em; }
+
+/* ===================================================================== STAGE */
+.cl-stage{ display:flex; gap:var(--space-5); flex-wrap:wrap; align-items:flex-start; }
+.cl-stage__side{ flex:1; min-width:210px; }
+
+/* stat readout rows */
+.cl-stat{ display:flex; justify-content:space-between; gap:var(--space-3); padding:6px 0;
+  border-bottom:1px dashed var(--c-line); font-size:var(--text-md); }
+.cl-stat b{ font-variant-numeric:tabular-nums; color:var(--c-cream); font-weight:var(--weight-bold); }
+
+/* legend (dataviz key) */
+.cl-legend{ display:flex; gap:var(--space-4); flex-wrap:wrap; font-size:var(--text-sm);
+  color:var(--c-dim); margin-top:var(--space-3); }
+.cl-legend i{ display:inline-block; width:13px; height:13px; border-radius:3px; margin-right:5px;
+  vertical-align:-2px; border:1px solid rgba(0,0,0,.18); }
+
+/* canvas surface (pixel sims) */
+.cl-canvas{ display:block; image-rendering:pixelated; background:var(--c-inset);
+  border-radius:var(--radius-md); border:var(--border) solid var(--c-line);
+  max-width:100%; height:auto; touch-action:none; }
+
+/* ===================================================================== FIGURE */
+.cl-figure{ margin:var(--space-5) 0; }
+.cl-figure img{ width:100%; display:block; border-radius:var(--radius-lg);
+  border:var(--border) solid var(--c-line); background:var(--c-inset); }
+.cl-figcaption{ color:var(--c-dim); font-size:var(--text-sm); margin-top:var(--space-2);
+  max-width:var(--measure); }
+.cl-figcaption b{ color:var(--c-body); }
+.cl-two{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); }
+@media(max-width:620px){ .cl-two{ grid-template-columns:1fr; } }
+
+/* ============================================================= MATH / CODE */
+.cl-code,code.cl-code{ font-family:var(--font-mono); font-size:.92em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); padding:.06em .4em; border-radius:5px; color:var(--c-code-ink); }
+.cl-kbd{ font-family:var(--font-mono); font-size:.85em; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-bottom-width:2px; padding:.08em .45em;
+  border-radius:5px; color:var(--c-ink); }
+/* display equation / code callout */
+.cl-eq{ display:block; background:var(--c-inset); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-amber); padding:var(--space-3) var(--space-4);
+  border-radius:var(--radius-md); margin:var(--space-4) 0; overflow-x:auto;
+  color:var(--c-code-ink); font-family:var(--font-mono); font-size:.94rem;
+  line-height:1.55; white-space:pre-wrap; }
+
+/* ===================================================================== TABLE */
+.cl-table{ border-collapse:collapse; width:100%; font-size:var(--text-md); margin:var(--space-3) 0;
+  font-variant-numeric:tabular-nums; }
+.cl-table th,.cl-table td{ border:var(--border) solid var(--c-line); padding:7px 10px; text-align:left; }
+.cl-table th{ background:var(--c-inset); color:var(--c-cream); font-weight:var(--weight-bold); }
+.cl-table td.num{ text-align:right; font-family:var(--font-mono); }
+
+/* verdict colours for verification rows */
+.cl-ok{ color:var(--c-ok); font-weight:var(--weight-bold); }
+.cl-bad{ color:var(--c-hot); font-weight:var(--weight-bold); }
+
+/* ===================================================== REPRODUCE / DETAILS */
+.cl-details{ margin:var(--space-3) 0; border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-md); padding:var(--space-1) var(--space-4); background:var(--c-surface); }
+.cl-details summary{ cursor:pointer; color:var(--c-cream); font-weight:var(--weight-bold);
+  padding:var(--space-2) 0; list-style-position:inside; }
+.cl-details[open] summary{ margin-bottom:var(--space-1); }
+
+/* a dedicated "How this was made / reproduce it" block */
+.cl-repro{ background:var(--c-surface); border:var(--border) solid var(--c-line);
+  border-left:3px solid var(--c-teal); border-radius:var(--radius-md);
+  padding:var(--space-4) var(--space-5); margin:var(--space-5) 0; }
+.cl-repro__title{ display:flex; align-items:center; gap:.5em; color:var(--c-teal-ink);
+  font-weight:var(--weight-bold); margin:0 0 var(--space-2); }
+.cl-repro__title::before{ content:"⚙"; }
+
+/* references list */
+.cl-refs{ font-size:var(--text-sm); color:var(--c-dim); padding-left:1.2em; }
+.cl-refs li{ margin:7px 0; }
+
+/* ===================================================================== MOTION */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
+
+/* --------------------------------------------------------------- utilities */
+.cl-visually-hidden{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.cl-stack > * + *{ margin-top:var(--space-4); }
+.cl-muted{ color:var(--c-dim); }
+.cl-tabnums{ font-variant-numeric:tabular-nums; }
+
+/* ============================================================ page-specific
+   Built on the Curiosity Lab tokens — no new hard-coded hues for text. */
+.r30-lead-fig{ margin-top:var(--space-4); }
+
+/* truth-table / rule-icon editor */
+.tt{ display:flex; gap:8px; flex-wrap:wrap; margin:var(--space-3) 0 var(--space-2); }
+.tt-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.tt-nb{ display:flex; gap:2px; }
+.bit{ width:15px; height:15px; border-radius:3px; border:1px solid var(--c-line-strong);
+  background:var(--c-surface); }
+.bit.on{ background:var(--c-ink); border-color:var(--c-ink); }
+.tt-arrow{ color:var(--c-dim); font-size:11px; line-height:1; }
+.tt-out{ width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:15px; cursor:pointer;
+  border-radius:var(--radius-sm); border:1px solid var(--c-line-strong);
+  background:var(--c-surface-2); color:var(--c-ink);
+  transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.tt-out:hover{ border-color:var(--c-amber); }
+.tt-out.on{ background:var(--c-amber); color:var(--c-on-accent); border-color:var(--c-amber); }
+.tt-code{ font-size:var(--text-2xs); color:var(--c-dim); font-family:var(--font-mono); letter-spacing:.04em; }
+
+.numinput{ width:5em; font-family:var(--font-mono); font-size:var(--text-md); text-align:center;
+  background:var(--c-surface-2); color:var(--c-ink); border:var(--border) solid var(--c-line);
+  border-radius:var(--radius-sm); min-height:var(--control-h); }
+.readout{ font-family:var(--font-mono); font-size:var(--text-sm); color:var(--c-body);
+  margin:var(--space-3) 0 0; line-height:1.7; }
+.readout .lbl{ color:var(--c-dim); }
+.readout b{ color:var(--c-cream); }
+.rulebin{ letter-spacing:.22em; color:var(--c-code-ink); }
+.boolean{ color:var(--c-code-ink); word-break:break-word; }
+
+/* crisp (non-pixelated) plot canvas for the density chart */
+.cl-plot{ display:block; width:100%; height:auto; background:var(--c-inset);
+  border:var(--border) solid var(--c-line); border-radius:var(--radius-md); }
+
+/* the live "two engines agree" / "Lucas check" verdict line */
+.verdict{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  font-size:var(--text-md); margin:var(--space-3) 0 0; min-height:1.4em; }
+.verdict .cl-ok::before{ content:"✓ "; }
+.verdict .cl-bad::before{ content:"✗ "; }
+
+.big-stat b{ font-size:var(--text-lg); }
+.prize-list h3{ margin-top:var(--space-4); }
+.prize-list h3:first-child{ margin-top:var(--space-1); }
+.flag-grid{ margin:var(--space-2) 0 0; }
+</style>
+<style>
+/* --- page-local helpers (extend the design system) --- */
+.cl-pills{ display:flex; flex-wrap:wrap; gap:var(--space-2); margin-top:var(--space-4); }
+.cl-note__label{ display:flex; align-items:center; gap:.5em; font-weight:var(--weight-bold);
+  color:var(--c-teal-ink); margin:0 0 var(--space-1); }
+.cl-note__label::before{ content:"\2139"; font-size:1.05em; line-height:1; }
+.cl-checklist{ max-width:var(--measure); list-style:none; padding-left:0; margin:var(--space-4) 0; }
+.cl-checklist li{ position:relative; padding-left:1.9em; margin:var(--space-3) 0; color:var(--c-body); }
+.cl-checklist li::before{ content:"\2713"; position:absolute; left:0; top:.05em; color:var(--c-ok);
+  font-weight:var(--weight-bold); }
+.cl-figure figcaption{ color:var(--c-dim); font-size:var(--text-sm); margin-top:var(--space-2); max-width:var(--measure); }
+.cl-figure figcaption b{ color:var(--c-body); }
+/* the lab canvas draws crisp bars + axes — leave default rendering */
+#histCanvas, #stripCanvas{ image-rendering:auto; width:100%; display:block;
+  border-radius:var(--radius-lg); background:var(--c-surface-2);
+  border:var(--border) solid var(--c-line); }
+.cl-statgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:0 var(--space-5);
+  margin:var(--space-4) 0 var(--space-2); }
+.cl-gennote{ color:var(--c-body); font-size:var(--text-md); margin:var(--space-3) 0 0;
+  max-width:var(--measure); min-height:2.6em; }
+.cl-verdict-ok{ color:var(--c-ok); }
+.cl-verdict-no{ color:var(--c-hot); }
+.cl-tagline{ font-variant-numeric:tabular-nums; }
+.cl-mono{ font-family:var(--font-mono); }
+/* let the source/N segmented controls wrap on phones instead of clipping */
+@media (max-width:820px){ #genSeg{ flex-wrap:wrap; overflow:visible; } #genSeg .cl-btn{ flex:1 0 auto; justify-content:center; } }
+@media (max-width:620px){ #viewSeg{ flex-wrap:wrap; } #viewSeg .cl-btn{ flex:1 0 auto; justify-content:center; } }
+</style>
+<style>
+/* --- Lab #6 (Langton's ant) page-local helpers — extend the design system --- */
+.cl-tag--proven{ color:var(--c-proven-ink); border-color:color-mix(in srgb,var(--c-ok) 45%,transparent);
+  background:color-mix(in srgb,var(--c-ok) 12%,transparent); }
+.cl-tag--cited{ color:var(--c-teal-ink); border-color:color-mix(in srgb,var(--c-teal) 45%,transparent);
+  background:color-mix(in srgb,var(--c-teal) 12%,transparent); }
+.cl-tag--open{ color:var(--c-warn-ink); border-color:var(--c-warn-edge); background:var(--c-warn-bg); }
+.cl-tag--empirical{ color:var(--c-emp-ink); border-color:color-mix(in srgb,var(--c-emp) 50%,transparent);
+  background:color-mix(in srgb,var(--c-emp) 14%,transparent); }
+
+/* extra semantic tokens (checked for >= 4.5:1 text contrast in both themes) */
+:root{ --c-emp:#7c5cbf; --c-emp-ink:#5f3fa6; --plot-stroke:#9a5410; --c-proven-ink:#176a47; }
+@media (prefers-color-scheme:dark){ :root{ --c-emp:#b59be6; --c-emp-ink:#c9b4f0; --plot-stroke:#f0a249; --c-proven-ink:#5fd0a0; } }
+[data-theme="light"]{ --c-emp:#7c5cbf; --c-emp-ink:#5f3fa6; --plot-stroke:#9a5410; --c-proven-ink:#176a47; }
+[data-theme="dark"] { --c-emp:#b59be6; --c-emp-ink:#c9b4f0; --plot-stroke:#f0a249; --c-proven-ink:#5fd0a0; }
+
+/* the rule card: two rows, white->right / black->left; swatches match the canvas colours */
+.ant-rulecard{ display:grid; gap:var(--space-2); margin:var(--space-3) 0; max-width:var(--measure); }
+.ant-rule-row{ display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;
+  padding:10px 12px; border:var(--border) solid var(--c-line); border-radius:var(--radius-md);
+  background:var(--c-surface-2); }
+.ant-swatch{ width:22px; height:22px; border-radius:5px; flex:0 0 auto; box-sizing:border-box; }
+.ant-swatch--white{ background:var(--c-inset); border:2px solid var(--c-line-strong); }
+.ant-swatch--black{ background:var(--c-ink); }
+.ant-rule-row .turn{ font-weight:var(--weight-bold); color:var(--c-cream); }
+.ant-rule-row .desc{ color:var(--c-body); font-size:var(--text-sm); }
+
+/* canvases stretch to the panel; heading chip is a big mono arrow */
+.ant-canvas{ width:100%; }
+.ant-head{ font-family:var(--font-mono); font-weight:var(--weight-bold); color:var(--c-cream); font-size:1.15em; }
+.ant-swatchkey{ display:inline-block; width:13px; height:13px; border-radius:3px; vertical-align:-2px;
+  box-sizing:border-box; }
+
+/* let wide button / preset rows wrap instead of clipping on phones */
+@media (max-width:560px){
+  #aBtns, #ePresets{ flex-wrap:wrap; overflow:visible; }
+  #ePresets .cl-btn{ flex:1 0 auto; justify-content:center; }
+}
+</style>
+</head>
+<body class="cl-body cl-body--wash">
+<main class="cl-wrap">
+
+<header class="cl-header cl-header--ruled">
+  <div class="cl-kicker">Curiosity Lab &middot; No. 6</div>
+  <h1 class="cl-title">Langton&rsquo;s ant: order out of chaos</h1>
+  <div class="cl-pills">
+    <span class="cl-pill"><b>interactive</b> &mdash; watch it build the highway</span>
+    <span class="cl-pill"><b>verified</b> &mdash; 30 + 19 checks</span>
+    <span class="cl-pill"><b>sourced</b> &mdash; proven &middot; cited &middot; open &middot; empirical, flagged</span>
+  </div>
+  <p class="cl-lead">One ant on a grid of square cells. <b>Two</b> rules. For about <b>ten thousand</b> steps it wanders in
+  what looks like pure noise &mdash; then, abruptly, it locks into building a perfectly periodic diagonal
+  &ldquo;<b>highway</b>&rdquo; and drives down it forever. It can be <i>proved</i> that it never gets permanently stuck; whether
+  the highway <i>must</i> always appear is, astonishingly, still <b>open</b>. Below you can watch the whole story unfold,
+  step by exact step.</p>
+</header>
+
+<!-- ============================ 1. THE RULE ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">1</span>The whole rule fits in two lines</h2>
+<div class="cl-prose">
+  <p>The grid starts all white. A single ant sits on one cell, facing up. At every step it looks <i>only</i> at the
+  colour of the cell it is standing on, turns, flips that cell, and walks one square forward:</p>
+  <p class="cl-eq">on a WHITE cell  &rarr;  turn right 90&deg;, paint it black, step forward
+on a BLACK cell  &rarr;  turn left 90&deg;,  paint it white, step forward</p>
+  <p>That is the entire program. No randomness, no memory, no look-ahead &mdash; the ant cannot &ldquo;see&rdquo; anything
+  but the square under its feet. Everything on this page is just this rule, iterated.</p>
+</div>
+
+<div class="ant-rulecard" aria-hidden="true">
+  <div class="ant-rule-row">
+    <span class="ant-swatch ant-swatch--white"></span>
+    <span class="turn">turn RIGHT &#8635;</span>
+    <span class="desc">&mdash; flip the cell to black, then step forward</span>
+  </div>
+  <div class="ant-rule-row">
+    <span class="ant-swatch ant-swatch--black"></span>
+    <span class="turn">turn LEFT &#8634;</span>
+    <span class="desc">&mdash; flip the cell to white, then step forward</span>
+  </div>
+</div>
+
+<div class="cl-note">
+  <p class="cl-note__label">One convention, fixed for the whole page</p>
+  <p>Sources state the rule with different left/right and up/down choices, which only mirrors the picture. We fix
+  <b>one</b>: white&nbsp;&rarr;&nbsp;right, black&nbsp;&rarr;&nbsp;left; <i>x</i> runs east, <i>y</i> runs <b>down</b>
+  (screen coordinates); the ant starts at the origin facing up. Because of this choice the highway runs off toward the
+  <b>lower&#8209;left</b>. The <b>direction</b> is convention&#8209;dependent &mdash; swap left/right or flip the
+  <i>y</i>&#8209;axis and the signs change &mdash; but the numbers we headline (<b>period&nbsp;104</b>,
+  <b>drift&nbsp;2&radic;2</b>, <b>+12&nbsp;cells</b>) are the same in every convention.</p>
+</div>
+
+<div class="cl-prose">
+  <p>House rule of this lab: keep apart what the code actually checks and what we take on the literature&rsquo;s word.
+  Throughout, claims are tagged <span class="cl-tag cl-tag--proven">proven by code</span> (recomputed live and
+  cross&#8209;checked against Python), <span class="cl-tag cl-tag--cited">cited</span> (a theorem from the literature, not
+  re&#8209;proved here), <span class="cl-tag cl-tag--open">open</span> (genuinely unsolved), or
+  <span class="cl-tag cl-tag--empirical">empirical</span> (something we observed but that is not a theorem).</p>
+  <p>Press <b>play</b> and watch. For the first few hundred steps the trail is roughly symmetric; then it dissolves into
+  a chaotic blob for thousands of steps; then &mdash; use <b>jump to highway</b> &mdash; it suddenly marches off in a
+  straight diagonal stripe. Nobody told it to. That transition is the whole mystery.</p>
+</div>
+
+<div class="cl-panel" aria-label="Live Langton's ant on an all-white grid">
+  <div class="cl-controls" id="aBtns">
+    <button class="cl-btn" id="aPlay" type="button">&#9654; play</button>
+    <button class="cl-btn" id="aStep" type="button">step</button>
+    <button class="cl-btn" id="aReset" type="button">reset</button>
+    <button class="cl-btn" id="aJump" type="button" style="margin-left:auto">jump to highway &#9654;&#9654;</button>
+  </div>
+  <div class="cl-control">
+    <label for="aSpeed">speed <b id="aSpeedOut" class="cl-mono">8</b> steps / frame</label>
+    <input class="cl-range" id="aSpeed" type="range" min="0" max="9" step="1" value="3"
+      aria-label="ant speed in steps per animation frame (logarithmic, 1 to 512)">
+  </div>
+  <canvas id="aCanvas" class="cl-canvas ant-canvas" role="img"
+    aria-label="Langton's ant moving on a grid. Black squares are the trail it has painted; the amber marker with a small triangle is the ant and the direction it faces."></canvas>
+  <p id="aLive" class="cl-visually-hidden" aria-live="polite"></p>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>step</span><b id="aStepN" class="cl-mono">0</b></div>
+    <div class="cl-stat"><span>black cells</span><b id="aBlack" class="cl-mono">0</b></div>
+    <div class="cl-stat"><span>heading</span><b id="aHeading" class="ant-head">&uarr;</b></div>
+    <div class="cl-stat"><span>phase</span><b id="aPhase" class="cl-mono">all&nbsp;white</b></div>
+  </div>
+  <p class="cl-gennote" id="aNote">The grid recentres itself so the ant stays in view. <b>Jump to highway</b> fast&#8209;forwards past the chaos to about step&nbsp;11,000.</p>
+</div>
+
+<!-- ============================ 2. THE HIGHWAY ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">2</span>The highway, measured exactly</h2>
+<div class="cl-prose">
+  <p>Once the highway starts, the ant&rsquo;s motion becomes <b>periodic up to a shift</b>: every <b>104 steps</b> the
+  local pattern repeats, displaced by a fixed diagonal jump. Run it and let the page measure the period, the drift and the
+  per&#8209;period change in black cells &mdash; live, from the same engine the tests pin down.</p>
+</div>
+
+<div class="cl-panel" aria-label="Highway analyzer">
+  <div class="cl-controls">
+    <button class="cl-btn" id="bRun" type="button">&#9654; run to the highway &amp; detect the period</button>
+  </div>
+  <p class="verdict" id="bVerdict" aria-live="polite"></p>
+  <canvas id="bCanvas" class="cl-canvas ant-canvas" role="img"
+    aria-label="A window onto the highway, showing its repeating diagonal pattern over three periods."></canvas>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>minimal period</span><b id="bPeriod" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>net drift / period</span><b id="bDrift" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>black cells / period</span><b id="bCells" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>highway onset</span><b id="bOnset" class="cl-mono">&mdash;</b></div>
+  </div>
+  <p class="readout" id="b52"></p>
+  <p class="cl-gennote" id="bNote">Tagged <span class="cl-tag cl-tag--proven">proven by code</span>: every number here is recomputed in your browser and matched against Python in the test gate. The drift <i>magnitude</i> 2&radic;2 and the period 104 are convention&#8209;independent; the drift&rsquo;s sign is not.</p>
+</div>
+
+<!-- ============================ 3. UNBOUNDED ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">3</span>The one big theorem: it can never get stuck</h2>
+<div class="cl-prose">
+  <p>Here is the deepest thing that <i>is</i> proven. No matter how you colour a finite number of starting cells, the ant
+  can <b>never</b> be trapped in a bounded region forever &mdash; it must visit infinitely many cells and wander off to
+  infinity. It cannot fall into a small repeating loop in place. This is the
+  <span class="cl-tag cl-tag--cited">cited</span> <b>unboundedness theorem</b> of
+  <b>Bunimovich&nbsp;&amp;&nbsp;Troubetzkoy&nbsp;(1992)</b>, proved by viewing the ant as a particle bouncing through a
+  &ldquo;Lorentz lattice gas&rdquo; of mirrors. Troubetzkoy (1997) later strengthened it: the set of cells visited
+  infinitely often has no corners.</p>
+</div>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">What this theorem does <i>not</i> say</p>
+  <p>Unboundedness says the ant always <i>escapes</i> &mdash; it says <b>nothing</b> about <i>how</i>. It does not prove
+  the highway must form, nor that the long&#8209;run motion is the period&#8209;104 drift. Escaping to infinity in some
+  other, non&#8209;highway way is not ruled out by this theorem. (That gap is exactly the open question in &sect;4.)</p>
+  <p style="margin-top:var(--space-2)">A naming caution: MathWorld calls this the &ldquo;Cohen&ndash;Kung theorem,&rdquo;
+  but that attribution is <b>disputed</b> &mdash; Wikipedia flags it as a misattribution (traced to a 1994
+  <i>Scientific American</i> column by Ian Stewart). The peer&#8209;reviewed result of record is
+  Bunimovich&ndash;Troubetzkoy&nbsp;(1992); we cite it that way.</p>
+</div>
+
+<!-- ============================ 4. THE OPEN QUESTION ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">4</span>The open question: must the highway <i>always</i> appear?</h2>
+<div class="cl-prose">
+  <p>Every all&#8209;white run anyone has ever computed eventually builds the highway. Start instead from a few black
+  cells, or a random blob, and &mdash; in practice &mdash; you still get a highway, sometimes after a much longer
+  scramble. But &ldquo;always&rdquo; has never been proved. Paint some cells and try to find a counterexample (you
+  won&rsquo;t &mdash; but nobody can prove you can&rsquo;t).</p>
+</div>
+
+<div class="cl-caveat">
+  <p class="cl-caveat__label">Open conjecture</p>
+  <p>Whether the ant builds a highway from <b>every</b> finite starting configuration is an
+  <span class="cl-tag cl-tag--open">open</span> problem, stated as open by <b>Gajardo, Moreira &amp; Goles&nbsp;(2002)</b>.
+  Keep it separate from the <span class="cl-tag cl-tag--empirical">empirical</span> fact that every run we&rsquo;ve
+  watched <i>does</i> highway. A tempting heuristic &mdash; &ldquo;because the rule is reversible, it should highway&rdquo;
+  (&sect;5) &mdash; is just that: a heuristic, not a proof.</p>
+</div>
+
+<div class="cl-panel" aria-label="Seed a finite configuration and run it">
+  <div class="cl-controls">
+    <button class="cl-btn" id="cRandom" type="button">randomize a blob</button>
+    <button class="cl-btn" id="cClear" type="button">clear</button>
+    <button class="cl-btn" id="cRun" type="button" style="margin-left:auto">&#9654; run &amp; look for a highway</button>
+  </div>
+  <p class="cl-hint">Click (or tap) cells to paint them black, then run. An empty canvas is just the all&#8209;white start.</p>
+  <canvas id="cCanvas" class="cl-canvas ant-canvas" role="img"
+    aria-label="An editable grid. Click cells to paint black starting squares; after running it shows the ant's trail and final position."></canvas>
+  <p id="cLive" class="cl-visually-hidden" aria-live="polite"></p>
+  <p class="verdict" id="cVerdict" aria-live="polite"></p>
+  <p class="cl-gennote" id="cNote">Pick a seed, then run. The detector looks for the 104&#8209;step highway signature; if it appears, the readout names the period and drift. &ldquo;No highway found&rdquo; only means it didn&rsquo;t appear within the step budget &mdash; never that none exists.</p>
+</div>
+
+<!-- ============================ 5. REVERSIBILITY ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">5</span>Reversibility: the rule runs backwards perfectly</h2>
+<div class="cl-prose">
+  <p>The update is a <b>bijection</b>: from the ant&rsquo;s position, heading and the colour it just left, you can always
+  reconstruct the previous state. So you can run the film in reverse. Build a trail forward, then play it backwards and
+  watch every black cell flip back to white until the grid is pristine and the ant is home, facing up &mdash;
+  <b>round&#8209;trip error exactly zero</b>. This is <span class="cl-tag cl-tag--proven">proven by code</span>: the gate
+  runs forward then inverse and checks the start is recovered exactly.</p>
+</div>
+
+<div class="cl-panel" aria-label="Reversibility: build a trail then un-build it">
+  <div class="cl-control">
+    <label for="dN">run length <b id="dNOut" class="cl-mono">1,200</b> steps</label>
+    <input class="cl-range" id="dN" type="range" min="100" max="3000" step="100" value="1200"
+      aria-label="number of steps to run forward before reversing">
+  </div>
+  <div class="cl-controls">
+    <button class="cl-btn" id="dFwd" type="button">build forward &#9654;</button>
+    <button class="cl-btn" id="dBack" type="button">un&#8209;build (reverse) &#9664;</button>
+    <button class="cl-btn" id="dReset" type="button">reset</button>
+  </div>
+  <canvas id="dCanvas" class="cl-canvas ant-canvas" role="img"
+    aria-label="The ant building a trail forward and then un-building it exactly in reverse."></canvas>
+  <p id="dLive" class="cl-visually-hidden" aria-live="polite"></p>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>direction</span><b id="dPhase" class="cl-mono">idle</b></div>
+    <div class="cl-stat"><span>black cells</span><b id="dBlack" class="cl-mono">0</b></div>
+    <div class="cl-stat"><span>round&#8209;trip error</span><b id="dErr" class="cl-mono">&mdash;</b></div>
+  </div>
+  <p class="cl-gennote" id="dNote">Build forward, then un&#8209;build. Reversibility is a genuine theorem about the rule &mdash; but note it does <i>not</i> imply the highway must form (&sect;4).</p>
+</div>
+
+<!-- ============================ 6. TURMITES ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">6</span>Beyond two colours: turmites</h2>
+<div class="cl-prose">
+  <p>Generalize the ant to <i>n</i> colours that cycle 0&rarr;1&rarr;&hellip;&rarr;<i>n</i>&minus;1&rarr;0, with a
+  <b>rule&#8209;string</b> of <i>n</i> letters telling it which way to turn on each colour (<b>R</b>&nbsp;=&nbsp;right,
+  <b>L</b>&nbsp;=&nbsp;left). Langton&rsquo;s ant is simply the rule&#8209;string <b>RL</b>. Tiny changes give wildly
+  different worlds.</p>
+  <p>A beautiful <span class="cl-tag cl-tag--cited">cited</span> theorem (Gale, Propp, Sutherland &amp; Troubetzkoy, 1995):
+  rule&#8209;strings whose cyclic form is built only from <b>LL</b> and <b>RR</b> pairs &mdash; such as
+  <b>LLRR</b>, <b>RLLR</b>, <b>LRRL</b> &mdash; return to <b>bilateral symmetry</b> infinitely often. Others, like
+  <b>RLR</b>, grow chaotically with no highway known (<span class="cl-tag cl-tag--open">open</span> /
+  <span class="cl-tag cl-tag--empirical">empirical</span>); <b>LRRRRRLLR</b> famously fills a tidy square
+  (<span class="cl-tag cl-tag--empirical">empirical</span>).</p>
+</div>
+
+<div class="cl-panel" aria-label="Turmite rule-string explorer">
+  <div class="cl-controls" id="ePresets" role="group" aria-label="preset rule strings">
+    <button class="cl-btn is-on" type="button" data-rule="RL" data-steps="12000" aria-pressed="true">RL = Langton</button>
+    <button class="cl-btn" type="button" data-rule="RLLR" data-steps="16000">RLLR</button>
+    <button class="cl-btn" type="button" data-rule="LLRR" data-steps="16000">LLRR</button>
+    <button class="cl-btn" type="button" data-rule="RLR" data-steps="60000">RLR</button>
+    <button class="cl-btn" type="button" data-rule="LRRRRRLLR" data-steps="70000">LRRRRRLLR</button>
+  </div>
+  <div class="cl-controls">
+    <label for="eRule">your rule (letters L / R):</label>
+    <input class="numinput" id="eRule" type="text" value="RL" maxlength="14" autocomplete="off" spellcheck="false"
+      aria-label="custom rule string of L and R letters" style="text-transform:uppercase; width:9rem">
+    <button class="cl-btn" id="eGo" type="button">run</button>
+  </div>
+  <canvas id="eCanvas" class="cl-canvas ant-canvas" role="img"
+    aria-label="The coloured field produced by the chosen turmite rule-string."></canvas>
+  <p id="eLive" class="cl-visually-hidden" aria-live="polite"></p>
+  <p class="verdict" id="eTag" aria-live="polite"></p>
+  <div class="cl-statgrid">
+    <div class="cl-stat"><span>rule</span><b id="eRuleOut" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>colours</span><b id="eColours" class="cl-mono">&mdash;</b></div>
+    <div class="cl-stat"><span>coloured cells</span><b id="eCells" class="cl-mono">&mdash;</b></div>
+  </div>
+  <p class="cl-gennote" id="eNote">Convention: the <i>i</i>&#8209;th letter is the turn on colour&nbsp;<i>i</i>; colours cycle as the ant leaves a cell. The proven&#8209;symmetric tag is a theorem; &ldquo;chaotic&rdquo; and &ldquo;fills a square&rdquo; are observations.</p>
+</div>
+
+<!-- ============================ 7. COMPUTATION ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">7</span>It can compute</h2>
+<div class="cl-prose">
+  <p>The ant is not just a curiosity &mdash; it can do logic. <span class="cl-tag cl-tag--cited">cited</span>
+  Gajardo, Moreira &amp; Goles (2002) showed the ant can simulate arbitrary <b>Boolean circuits</b>, and that deciding
+  whether the ant ever visits a given cell is <b>P&#8209;hard</b> for finite configurations &mdash; so the dynamics are,
+  in a precise sense, as hard as any efficient computation. With <b>infinite but finitely&#8209;described</b> initial
+  configurations the ant is capable of <b>universal computation</b>, which makes long&#8209;term prediction
+  <b>undecidable</b> in general. One careful caveat: universality and undecidability rely on those infinite
+  configurations; for genuinely finite starts the proven statement is P&#8209;hardness, not Turing&#8209;completeness.</p>
+</div>
+
+<!-- ============================ 8. HOW WE CHECKED ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">8</span>How we checked</h2>
+<div class="cl-prose">
+  <p>Two gates back this page. <b class="cl-mono">verify.py</b> (<b>30</b> checks, standard&#8209;library Python only)
+  runs <b>two independently written simulators</b> &mdash; one a dictionary grid, one a set of black cells with its own
+  movement code &mdash; and asserts they agree cell&#8209;for&#8209;cell for the first <b>12,000</b> steps, then pins the
+  period, drift, cells&#8209;per&#8209;period, onset, reversibility and turmite facts. <b class="cl-mono">test_core.mjs</b>
+  (<b>19</b> checks) runs the <i>same</i> JavaScript engine this page uses, cross&#8209;checks it against Python, and
+  &mdash; crucially &mdash; verifies that the engine inlined into this page is <b>byte&#8209;for&#8209;byte identical</b>
+  to the tested file. The code is open:
+  <a class="cl-link" href="https://github.com/rtmodb-rgb/curiosity-lab">github.com/rtmodb-rgb/curiosity-lab</a>.</p>
+</div>
+
+<h3 class="cl-h3">Re&#8209;computed here (two independent ways where it matters)</h3>
+<ul class="cl-checklist">
+  <li>Two simulators reproduce the <b>identical trajectory</b> &mdash; position, heading and flipped cell &mdash; for
+      12,000 steps.</li>
+  <li>The highway has <b>minimal period 104</b> (and <b>P = 52 fails</b>); net drift magnitude&sup2; <b>= 8</b>, i.e.
+      <b>2&radic;2 &asymp; 2.828</b> cells per period; <b>+12</b> black cells per period, checked across consecutive
+      period boundaries.</li>
+  <li><b>Reversibility</b>: forward 5,000 steps then 5,000 inverse steps returns to the exact origin &mdash; empty grid,
+      position (0,&nbsp;0), heading up.</li>
+  <li>Highway <b>onset</b> from all&#8209;white lands at step <b>&asymp;9,977</b> under a precisely defined detector
+      (about 10&#8308;), inside a sane 9,000&ndash;11,000 band.</li>
+  <li><b>Turmites</b>: the rule&#8209;string <b>RL</b> reproduces Langton (period 104); the proven&#8209;symmetric family
+      <b>LLRR&nbsp;/&nbsp;RLLR&nbsp;/&nbsp;LRRL</b> returns to a verified bilateral symmetry.</li>
+</ul>
+
+<h3 class="cl-h3">Cited, not re&#8209;proved</h3>
+<ul class="cl-checklist" style="--c-ok:var(--c-dim)">
+  <li><b>Unboundedness</b> for any finite configuration &mdash; Bunimovich&ndash;Troubetzkoy (1992); strengthened by
+      Troubetzkoy (1997).</li>
+  <li><b>Universality / P&#8209;hardness / undecidability</b> &mdash; Gajardo&ndash;Moreira&ndash;Goles (2002), with the
+      finite&#8209;vs&#8209;infinite caveat above.</li>
+  <li>The <b>bilateral&#8209;symmetry theorem</b> for LL/RR rule&#8209;strings &mdash; Gale&ndash;Propp&ndash;Sutherland&ndash;Troubetzkoy
+      (1995). We verify a concrete symmetry occurs; the &ldquo;infinitely often&rdquo; is theirs.</li>
+  <li>That the highway emerges from <b>every</b> finite start is <b>open</b>; &ldquo;all&#8209;white&nbsp;&rarr;&nbsp;highway&rdquo;
+      and &ldquo;RLR is chaotic&rdquo; are <b>empirical</b>.</li>
+</ul>
+
+<!-- ============================ SOURCES ============================ -->
+<h2 class="cl-h2"><span class="cl-section-num">&sect;</span>Sources</h2>
+<div class="cl-prose" style="font-size:var(--text-sm); color:var(--c-body)">
+  <p>
+  Langton, C. G. (1986). &ldquo;Studying artificial life with cellular automata.&rdquo; <i>Physica D</i> <b>22</b>(1&ndash;3), 120&ndash;149. doi:10.1016/0167-2789(86)90237-X. &middot;
+  Bunimovich, L. A. &amp; Troubetzkoy, S. E. (1992). &ldquo;Recurrence properties of Lorentz lattice gas cellular automata.&rdquo; <i>J. Stat. Phys.</i> <b>67</b>(1&ndash;2), 289&ndash;302. doi:10.1007/BF01049035. &middot;
+  Troubetzkoy, S. (1997). &ldquo;Lewis&ndash;Parker lecture: the ant.&rdquo; <i>Alabama J. Math.</i> <b>21</b>(2). &middot;
+  Gale, D., Propp, J., Sutherland, S. &amp; Troubetzkoy, S. (1995). &ldquo;Further travels with my ant.&rdquo; <i>Math. Intelligencer</i> <b>17</b>(3), 48&ndash;56. arXiv:math/9501233. &middot;
+  Gajardo, A., Moreira, A. &amp; Goles, E. (2002). &ldquo;Complexity of Langton&rsquo;s ant.&rdquo; <i>Discrete Appl. Math.</i> <b>117</b>(1&ndash;3), 41&ndash;50. doi:10.1016/S0166-218X(00)00334-6; arXiv:nlin/0306022. &middot;
+  Stewart, I. (1994). &ldquo;The ultimate in anty&#8209;particles.&rdquo; <i>Sci. Am.</i> <b>271</b>(1), 104&ndash;107 (origin of the disputed &ldquo;Cohen&ndash;Kung&rdquo; name).
+  </p>
+</div>
+
+<footer class="cl-footer">
+  <p><b>Computational Curiosity Lab &mdash; No.&nbsp;6.</b> Built and verified in the open. Every cell, period and drift on
+  this page is computed live in your browser by the same engine the tests pin down; the headline numbers are checked two
+  independent ways (<span class="cl-mono">verify.py</span>, 30 checks &middot; <span class="cl-mono">test_core.mjs</span>,
+  19 checks &mdash; including byte&#8209;identity of the inlined engine) and independently red&#8209;teamed before
+  publishing. Proven facts are kept apart from cited, open and merely&#8209;observed ones, on purpose.</p>
+  <p style="margin-top:var(--space-3)"><a class="cl-link" href="../">&larr; back to the Lab</a></p>
+</footer>
+
+</main>
+<script>
+/* Inlined verbatim from core.js, LANGTON_CORE region.
+   test_core.mjs guards that this block matches that file byte-for-byte;
+   do not edit here -- edit core.js and re-run the gate. */
+/* === LANGTON_CORE START === */
+"use strict";
+
+// Headings: 0=Up 1=Right 2=Down 3=Left  (visual clockwise on a y-DOWN screen).
+const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
+const DX = [0, 1, 0, -1];     // +x is east  (RIGHT)
+const DY = [-1, 0, 1, 0];     // +y is south (DOWN);  UP decreases y
+
+// A 31-bit prime: polynomial-hash modulus.  Every intermediate product below stays
+// well under 2^53, so a JS Number reproduces langton.py's hash exactly.
+const SIG_MOD = 2147483647;
+
+// ---- the two-colour ant  (sparse Map grid: only touched cells are stored) -----
+class Ant {
+  constructor() {
+    this.grid = new Map();   // "x,y" -> 0|1   (key absent = white)
+    this.x = 0;
+    this.y = 0;
+    this.dir = UP;
+    this.stepCount = 0;
+    this.black = 0;          // number of cells currently coloured black (=1)
+  }
+
+  color(x, y) {
+    const v = this.grid.get(x + "," + y);
+    return v === undefined ? 0 : v;
+  }
+
+  // Set a cell's colour (0/1) while keeping the black-cell count correct.  Used to
+  // seed a finite configuration before running (the all-white run never needs it).
+  setCell(x, y, c) {
+    const key = x + "," + y;
+    const cur = this.grid.get(key);
+    const old = cur === undefined ? 0 : cur;
+    if (old === c) return;
+    this.grid.set(key, c);
+    this.black += c === 1 ? 1 : -1;
+  }
+
+  // Advance one step.  Returns the colour the current cell is flipped TO.
+  step() {
+    const key = this.x + "," + this.y;
+    const c = this.grid.get(key);
+    let flippedTo;
+    if (c === undefined || c === 0) {   // white -> turn RIGHT, flip to black
+      this.dir = (this.dir + 1) & 3;
+      this.grid.set(key, 1);
+      this.black += 1;
+      flippedTo = 1;
+    } else {                            // black -> turn LEFT, flip to white
+      this.dir = (this.dir + 3) & 3;
+      this.grid.set(key, 0);
+      this.black -= 1;
+      flippedTo = 0;
+    }
+    this.x += DX[this.dir];
+    this.y += DY[this.dir];
+    this.stepCount += 1;
+    return flippedTo;
+  }
+
+  // Undo exactly one forward step (the global update is a bijection).
+  invStep() {
+    const px = this.x - DX[this.dir];   // move back onto the previously-flipped cell
+    const py = this.y - DY[this.dir];
+    const raw = this.grid.get(px + "," + py);
+    const cNow = raw === undefined ? 0 : raw;
+    const cPre = 1 - cNow;              // that cell was flipped during the forward step
+    this.grid.set(px + "," + py, cPre);
+    this.black += cPre === 1 ? 1 : -1;
+    // recover the previous heading from the cell's restored (pre-step) colour
+    if (cPre === 0) {                   // had been white -> we turned right (+1); undo -1
+      this.dir = (this.dir + 3) & 3;
+    } else {                            // had been black -> we turned left (-1); undo +1
+      this.dir = (this.dir + 1) & 3;
+    }
+    this.x = px;
+    this.y = py;
+    this.stepCount -= 1;
+  }
+
+  // Array of [x, y] for every currently-black cell.
+  blackCells() {
+    const out = [];
+    for (const [k, v] of this.grid) {
+      if (v === 1) {
+        const i = k.indexOf(",");
+        out.push([Number(k.slice(0, i)), Number(k.slice(i + 1))]);
+      }
+    }
+    return out;
+  }
+}
+
+function runFromAllWhite(n) {
+  const a = new Ant();
+  for (let i = 0; i < n; i++) a.step();
+  return a;
+}
+
+// Record the all-white run.  pos[i]=[x,y], head[i]=dir, black[i]=#black after i steps.
+function trajectory(n) {
+  const a = new Ant();
+  const pos = [[a.x, a.y]];
+  const head = [a.dir];
+  const black = [a.black];
+  for (let i = 0; i < n; i++) {
+    a.step();
+    pos.push([a.x, a.y]);
+    head.push(a.dir);
+    black.push(a.black);
+  }
+  return { pos, head, black };
+}
+
+// Deterministic fingerprint of the all-white run after n steps:
+// [x, y, dir, blackCount, hash], hash = polynomial over the lexicographically-sorted
+// black cells mod SIG_MOD (every product < 2^53, so it matches langton.py exactly).
+function stateSignature(n) {
+  const a = runFromAllWhite(n);
+  const blacks = a.blackCells();
+  blacks.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  let h = 0;
+  for (const cell of blacks) {
+    h = (h * 1000003 + (cell[0] + 1000000) * 2000003 + (cell[1] + 1000000)) % SIG_MOD;
+  }
+  return [a.x, a.y, a.dir, a.black, h];
+}
+
+// Rolling hash of the ENTIRE all-white path (x, y, dir at every state 0..n).  A single
+// number that differs if any step of the trajectory differs; matches langton.py.
+function pathSignature(n) {
+  const a = new Ant();
+  let h = (a.x + 1000000) * 2000003 + (a.y + 1000000) * 9 + a.dir;
+  h %= SIG_MOD;
+  for (let i = 0; i < n; i++) {
+    a.step();
+    h = (h * 1000003 + (a.x + 1000000) * 2000003 + (a.y + 1000000) * 9 + a.dir) % SIG_MOD;
+  }
+  return h;
+}
+
+// ---- highway analysis: minimal period, drift, cells/period, onset -------------
+// True (returns [dx,dy]) iff over s in [lo,hi) the P-step displacement is constant
+// AND the heading repeats; null otherwise.
+function periodHolds(pos, head, P, lo, hi) {
+  const d0x = pos[lo + P][0] - pos[lo][0];
+  const d0y = pos[lo + P][1] - pos[lo][1];
+  for (let s = lo; s < hi; s++) {
+    if (head[s + P] !== head[s]) return null;
+    if (pos[s + P][0] - pos[s][0] !== d0x || pos[s + P][1] - pos[s][1] !== d0y) return null;
+  }
+  return [d0x, d0y];
+}
+
+// Smallest P (1..periodCap) whose displacement signature is exactly periodic over the
+// last `window` steps.  Multiples of the true period also pass, so the smallest is the
+// fundamental period (104 for Langton).
+function minimalPeriod(pos, head, maxSteps, periodCap, window) {
+  periodCap = periodCap || 200;
+  window = window || 1000;
+  const lo = maxSteps - window - periodCap;
+  for (let P = 1; P <= periodCap; P++) {
+    if (periodHolds(pos, head, P, lo, lo + window)) return P;
+  }
+  return null;
+}
+
+// First step from which the P-step signature (displacement === [driftX,driftY] and
+// heading repeats) holds for ALL later s up to the horizon.  = (last failing step)+1.
+function onsetStep(pos, head, P, driftX, driftY, maxSteps) {
+  let onset = 0;
+  for (let s = 0; s <= maxSteps - P; s++) {
+    if (head[s + P] !== head[s] ||
+        pos[s + P][0] - pos[s][0] !== driftX ||
+        pos[s + P][1] - pos[s][1] !== driftY) {
+      onset = s + 1;
+    }
+  }
+  return onset;
+}
+
+// Run from all-white; return {period, dx, dy, drift_mag2, cells_per_period, onset_step}.
+// Drift is measured at the very end of the run (deep in the highway).
+function detectHighway(maxSteps, periodCap, window) {
+  maxSteps = maxSteps || 20000;
+  periodCap = periodCap || 200;
+  window = window || 1000;
+  const tr = trajectory(maxSteps);
+  const pos = tr.pos, head = tr.head, black = tr.black;
+  const P = minimalPeriod(pos, head, maxSteps, periodCap, window);
+  if (P === null) throw new Error("no period <= " + periodCap + " found within " + maxSteps + " steps");
+  const dx = pos[maxSteps][0] - pos[maxSteps - P][0];
+  const dy = pos[maxSteps][1] - pos[maxSteps - P][1];
+  const cells = black[maxSteps] - black[maxSteps - P];
+  const onset = onsetStep(pos, head, P, dx, dy, maxSteps);
+  return { period: P, dx: dx, dy: dy, drift_mag2: dx * dx + dy * dy, cells_per_period: cells, onset_step: onset };
+}
+
+// ---- multi-colour turmites  ("RL" == Langton's ant) ---------------------------
+// Apply one turn letter to a heading index.  'R' = right (+1), 'L' = left (-1).
+function turn(dir, ch) {
+  return ch === "R" ? (dir + 1) & 3 : (dir + 3) & 3;
+}
+
+class Turmite {
+  // rule[c] in {'L','R'} is the turn on a cell of colour c; colours cycle
+  // 0->1->...->(n-1)->0 as the ant leaves.  'RL' is Langton's ant here.
+  constructor(rule) {
+    rule = String(rule).toUpperCase();
+    if (rule.length === 0 || /[^LR]/.test(rule)) {
+      throw new Error("rule must be a non-empty string of 'L'/'R'");
+    }
+    this.rule = rule;
+    this.n = rule.length;
+    this.grid = new Map();
+    this.x = 0;
+    this.y = 0;
+    this.dir = UP;
+    this.stepCount = 0;
+  }
+
+  step() {
+    const key = this.x + "," + this.y;
+    const raw = this.grid.get(key);
+    const c = raw === undefined ? 0 : raw;
+    this.dir = turn(this.dir, this.rule[c]);
+    const nc = (c + 1) % this.n;
+    this.grid.set(key, nc);
+    this.x += DX[this.dir];
+    this.y += DY[this.dir];
+    this.stepCount += 1;
+    return nc;
+  }
+
+  // Map "x,y" -> colour for every non-zero (non-white) cell.
+  colorField() {
+    const m = new Map();
+    for (const [k, v] of this.grid) if (v !== 0) m.set(k, v);
+    return m;
+  }
+}
+
+function runTurmite(rule, n) {
+  const t = new Turmite(rule);
+  for (let i = 0; i < n; i++) t.step();
+  return t;
+}
+
+// ---- bilateral-symmetry predicate (proven LL/RR-pair family, Gale et al. 1995) -
+// colorField: Map "x,y" -> colour (non-white cells).  Search a single mirror axis
+// (vertical / horizontal / either diagonal) that maps the field onto itself, colours
+// included.  Any reflection symmetry of a finite set must fix its bounding box, so
+// the one box-bisecting axis per orientation is the only candidate -> COMPLETE.
+// Returns a short axis tag, else null.
+function reflectionSymmetry(colorField) {
+  if (!colorField || colorField.size === 0) return null;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const pts = [];
+  for (const [k, col] of colorField) {
+    const i = k.indexOf(",");
+    const x = Number(k.slice(0, i)), y = Number(k.slice(i + 1));
+    pts.push([x, y, col]);
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  function symmetric(map) {
+    for (let i = 0; i < pts.length; i++) {
+      const m = map(pts[i][0], pts[i][1]);
+      if (colorField.get(m[0] + "," + m[1]) !== pts[i][2]) return false;
+    }
+    return true;
+  }
+  function half(twice) { return twice % 2 === 0 ? String(twice / 2) : (twice / 2).toString(); }
+
+  const a = minX + maxX;               // vertical mirror x = a/2
+  if (symmetric(function (x, y) { return [a - x, y]; })) return "vertical x=" + half(a);
+  const b = minY + maxY;               // horizontal mirror y = b/2
+  if (symmetric(function (x, y) { return [x, b - y]; })) return "horizontal y=" + half(b);
+  const diffs = [];                    // diagonal slope +1: (x,y) -> (y+k, x-k)
+  const xb = [minX, maxX], yb = [minY, maxY];
+  for (let p = 0; p < 2; p++) for (let q = 0; q < 2; q++) diffs.push(xb[p] - yb[q]);
+  const kk = Math.min.apply(null, diffs) + Math.max.apply(null, diffs);
+  if (kk % 2 === 0) {
+    const k = kk / 2;
+    if (symmetric(function (x, y) { return [y + k, x - k]; })) return "diagonal x-y=" + k;
+  }
+  const sums = [];                     // anti-diagonal slope -1: (x,y) -> (m-y, m-x)
+  for (let p = 0; p < 2; p++) for (let q = 0; q < 2; q++) sums.push(xb[p] + yb[q]);
+  const mm = Math.min.apply(null, sums) + Math.max.apply(null, sums);
+  if (mm % 2 === 0) {
+    const m = mm / 2;
+    if (symmetric(function (x, y) { return [m - y, m - x]; })) return "antidiagonal x+y=" + m;
+  }
+  return null;
+}
+
+// First step (1..maxSteps) at which `rule`'s field has >= minCells coloured cells AND
+// admits a reflection symmetry.  Returns [step, axis] or null.  The >= minCells floor
+// skips the trivially-symmetric first few steps; for the proven LL/RR-pair family such
+// steps recur infinitely often (we only need to exhibit one after real growth).
+function firstSymmetricStep(rule, maxSteps, minCells) {
+  if (minCells === undefined) minCells = 8;
+  const t = new Turmite(rule);
+  for (let s = 1; s <= maxSteps; s++) {
+    t.step();
+    const cf = t.colorField();
+    if (cf.size >= minCells) {
+      const axis = reflectionSymmetry(cf);
+      if (axis !== null) return [s, axis];
+    }
+  }
+  return null;
+}
+/* === LANGTON_CORE END === */
+</script>
+<script>
+/* ===================================================================== *
+ *  Page UI for Lab #6 (Langton's ant). Uses the verified engine above    *
+ *  (the LANGTON_CORE block); never redefines its math. Every number and   *
+ *  cell shown is produced live by those functions.                        *
+ * ===================================================================== */
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const group = s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const clamp = (v,lo,hi) => v < lo ? lo : (v > hi ? hi : v);
+  const HEAD = ["↑","→","↓","←"];   // heading glyph by dir 0=up,1=right,2=down,3=left
+  const redraws = [];
+  // colours for turmites (index 0 = white = the canvas background, never drawn).
+  // each tuned to clear >= 3:1 contrast on both the light and dark canvas insets.
+  const TURMITE_PAL = [null,"#aa5d1a","#1978a8","#d4207a","#148238","#8126ff","#d2371f",
+    "#216eda","#8b6d15","#137f6d","#c31dc3","#408013","#4040ff","#7c7313","#cd1fa1"];
+
+  function fitCanvas(canvas, ratio){
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 680, h = Math.round(ratio * w);
+    canvas.style.height = h + "px";
+    canvas.width = Math.max(1, Math.round(w*dpr));
+    canvas.height = Math.max(1, Math.round(h*dpr));
+    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx, w, h};
+  }
+  function dims(canvas, ratio){ const w = canvas.clientWidth || 680; return {w, h: Math.round(ratio*w)}; }
+  function segOn(seg, btn){
+    for (const b of seg.querySelectorAll("button")){
+      const on = b === btn;
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+  // Map integer cell coords <-> pixels so the bbox fits, centred, inside w x h.
+  function layout(w, h, bbox, maxCell){
+    const m = 1;                                              // 1-cell margin around the bbox
+    const spanX = (bbox.maxX - bbox.minX + 1) + 2*m;
+    const spanY = (bbox.maxY - bbox.minY + 1) + 2*m;
+    let cell = Math.min(w/spanX, h/spanY);
+    cell = Math.max(1, Math.min(maxCell, cell));
+    const gridW = (bbox.maxX - bbox.minX + 1) * cell;
+    const gridH = (bbox.maxY - bbox.minY + 1) * cell;
+    const ox = (w - gridW)/2 - bbox.minX*cell;                // px = ox + x*cell
+    const oy = (h - gridH)/2 - bbox.minY*cell;
+    return {
+      cell, ox, oy,
+      toPx: (x,y) => [ox + x*cell, oy + y*cell],
+      fromPx: (px,py) => [Math.floor((px-ox)/cell), Math.floor((py-oy)/cell)]
+    };
+  }
+  function drawAnt(ctx, L, ant){
+    const [px,py] = L.toPx(ant.x, ant.y), c = L.cell;
+    ctx.fillStyle = cssv("--c-amber");
+    ctx.fillRect(px, py, c, c);
+    ctx.strokeStyle = cssv("--c-ink"); ctx.lineWidth = Math.max(1, c*0.12);
+    ctx.strokeRect(px + ctx.lineWidth/2, py + ctx.lineWidth/2, c - ctx.lineWidth, c - ctx.lineWidth);
+    if (c >= 7){                                              // heading triangle if there's room
+      const cx = px + c/2, cy = py + c/2, r = c*0.30;
+      const vx = DX[ant.dir], vy = DY[ant.dir];               // unit heading (screen, y-down)
+      ctx.beginPath();
+      ctx.moveTo(cx + vx*r, cy + vy*r);
+      ctx.lineTo(cx - vx*r - vy*r*0.72, cy - vy*r + vx*r*0.72);
+      ctx.lineTo(cx - vx*r + vy*r*0.72, cy - vy*r - vx*r*0.72);
+      ctx.closePath();
+      ctx.fillStyle = cssv("--c-ink"); ctx.fill();
+    }
+  }
+  // bounding box of an ant's black cells, always including the ant itself.
+  function antBbox(ant){
+    let a = ant.x, b = ant.x, c = ant.y, d = ant.y;
+    for (const [x,y] of ant.blackCells()){
+      if (x<a) a=x; if (x>b) b=x; if (y<c) c=y; if (y>d) d=y;
+    }
+    return {minX:a, maxX:b, minY:c, maxY:d};
+  }
+  function grow(view, bb){
+    if (!view) return {minX:bb.minX, maxX:bb.maxX, minY:bb.minY, maxY:bb.maxY};
+    if (bb.minX<view.minX) view.minX=bb.minX; if (bb.maxX>view.maxX) view.maxX=bb.maxX;
+    if (bb.minY<view.minY) view.minY=bb.minY; if (bb.maxY>view.maxY) view.maxY=bb.maxY;
+    return view;
+  }
+  // fill the black cells of an ant, then the ant marker, fit to `view`.
+  function drawAntGrid(canvas, ratio, ant, view, maxCell){
+    const {ctx, w, h} = fitCanvas(canvas, ratio);
+    ctx.clearRect(0,0,w,h);
+    if (!view) return;
+    const L = layout(w, h, view, maxCell);
+    ctx.fillStyle = cssv("--c-ink");
+    const s = Math.ceil(L.cell);
+    for (const [x,y] of ant.blackCells()){
+      const [px,py] = L.toPx(x,y);
+      ctx.fillRect(Math.floor(px), Math.floor(py), s, s);
+    }
+    drawAnt(ctx, L, ant);
+    return L;
+  }
+
+  /* ---------------- Widget A: the live ant (all-white start) ---------------- */
+  (function widgetA(){
+    const canvas = $("aCanvas");
+    if (!canvas) return;
+    const RATIO = 0.62, MAXCELL = 26, MAXSTEP = 130000;
+    let ant = new Ant(), view = null, playing = false, rafId = null;
+    const sf = () => Math.round(Math.pow(2, +$("aSpeed").value));
+    function phase(){
+      const n = ant.stepCount;
+      if (n === 0) return "all white";
+      if (n < 500) return "≈ symmetric";
+      if (n < 10000) return "chaotic";
+      return "highway (periodic)";
+    }
+    function readouts(){
+      $("aStepN").textContent = group(ant.stepCount);
+      $("aBlack").textContent = group(ant.black);
+      $("aHeading").textContent = HEAD[ant.dir];
+      $("aPhase").innerHTML = phase();
+    }
+    function draw(){
+      view = grow(view, antBbox(ant));
+      drawAntGrid(canvas, RATIO, ant, view, MAXCELL);
+      readouts();
+    }
+    redraws.push(draw);
+    function stop(){ playing = false; if (rafId) cancelAnimationFrame(rafId); rafId = null; $("aPlay").innerHTML = "▶ play"; }
+    function loop(){
+      const n = sf();
+      for (let i = 0; i < n && ant.stepCount < MAXSTEP; i++) ant.step();
+      draw();
+      if (ant.stepCount >= MAXSTEP){ stop(); $("aLive").textContent = "Reached the demo limit of " + group(MAXSTEP) + " steps."; return; }
+      if (playing) rafId = requestAnimationFrame(loop);
+    }
+    function play(){ if (playing){ stop(); return; } playing = true; $("aPlay").innerHTML = "❙❙ pause"; $("aLive").textContent = "Running."; rafId = requestAnimationFrame(loop); }
+    $("aPlay").addEventListener("click", play);
+    $("aStep").addEventListener("click", () => { stop(); if (ant.stepCount < MAXSTEP){ ant.step(); draw(); } });
+    $("aReset").addEventListener("click", () => { stop(); ant = new Ant(); view = null; draw(); $("aLive").textContent = "Reset to the all-white grid."; });
+    $("aJump").addEventListener("click", () => {
+      stop(); ant = new Ant(); view = null;
+      const target = 11000; for (let i = 0; i < target; i++) ant.step();
+      draw(); $("aLive").textContent = "Jumped to step " + group(target) + " — the ant is on the highway.";
+    });
+    $("aSpeed").addEventListener("input", () => { $("aSpeedOut").textContent = group(sf()); });
+    $("aSpeedOut").textContent = group(sf());
+    draw();
+  })();
+
+  /* ---------------- Widget B: highway analyzer ---------------- */
+  (function widgetB(){
+    const canvas = $("bCanvas");
+    if (!canvas) return;
+    const RATIO = 0.5;
+    function emptyDraw(){ const {ctx,w,h} = fitCanvas(canvas, RATIO); ctx.clearRect(0,0,w,h); }
+    redraws.push(() => { if (canvas._drawn) canvas._drawn(); else emptyDraw(); });
+    emptyDraw();
+    $("bRun").addEventListener("click", () => {
+      const hw = detectHighway(20000, 200, 1000);            // {period,dx,dy,drift_mag2,cells_per_period,onset_step}
+      const tr = trajectory(12000);
+      const lo = 12000 - 1000 - 200;
+      const p52 = periodHolds(tr.pos, tr.head, 52, lo, lo + 1000);   // null => 52 is NOT a period
+      $("bPeriod").textContent = group(hw.period);
+      $("bDrift").innerHTML = "(" + hw.dx + ", " + hw.dy + "), |d| = √" + hw.drift_mag2 +
+        (hw.drift_mag2 === 8 ? " = 2√2" : "") + " ≈ " + Math.sqrt(hw.drift_mag2).toFixed(3);
+      $("bCells").textContent = (hw.cells_per_period >= 0 ? "+" : "") + hw.cells_per_period;
+      $("bOnset").innerHTML = "≈ " + group(hw.onset_step) + " (about 10⁴)";
+      $("b52").innerHTML = "<span class=\"lbl\">period 52?</span> " +
+        (p52 === null ? "<b>fails</b> — so 104 is the minimal period ✓" : "<b>holds?!</b> (unexpected)");
+      $("bVerdict").innerHTML = "<span class=\"cl-ok\"></span>highway detected — period " + hw.period +
+        ", drift magnitude " + (hw.drift_mag2===8 ? "2√2" : "√"+hw.drift_mag2) + ", " + (hw.cells_per_period>=0?"+":"") + hw.cells_per_period + " cells per period";
+      // draw ~3 periods of the highway: the trail plus the ant's path through it
+      const S = hw.onset_step + 3*hw.period;
+      let a=Infinity,b=-Infinity,c=Infinity,d=-Infinity;
+      const path = [];
+      for (let s = hw.onset_step; s <= S; s++){
+        const p = tr.pos[s]; path.push(p);
+        if (p[0]<a)a=p[0]; if (p[0]>b)b=p[0]; if (p[1]<c)c=p[1]; if (p[1]>d)d=p[1];
+      }
+      const bbox = {minX:a-2, maxX:b+2, minY:c-2, maxY:d+2};
+      const runAnt = new Ant(); for (let i = 0; i < S; i++) runAnt.step();
+      function render(){
+        const {ctx, w, h} = fitCanvas(canvas, RATIO); ctx.clearRect(0,0,w,h);
+        const L = layout(w, h, bbox, 16);
+        ctx.fillStyle = cssv("--c-ink"); const sq = Math.ceil(L.cell);
+        for (const [x,y] of runAnt.blackCells()){
+          if (x<bbox.minX||x>bbox.maxX||y<bbox.minY||y>bbox.maxY) continue;
+          const [px,py] = L.toPx(x,y); ctx.fillRect(Math.floor(px),Math.floor(py),sq,sq);
+        }
+        ctx.strokeStyle = cssv("--plot-stroke"); ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath();
+        for (let i = 0; i < path.length; i++){ const [px,py] = L.toPx(path[i][0]+0.5, path[i][1]+0.5); if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+        ctx.stroke();
+      }
+      canvas._drawn = render; render();
+      $("bNote").innerHTML = "The dark squares are the highway&rsquo;s repeating tile; the amber line is the ant&rsquo;s path over three periods, marching in a fixed diagonal direction. <span class=\"cl-tag cl-tag--proven\">proven by code</span>";
+    });
+  })();
+
+  /* ---------------- Widget C: seed a finite config and run (the OPEN question) -------- */
+  (function widgetC(){
+    const canvas = $("cCanvas");
+    if (!canvas) return;
+    const RATIO = 0.62, EDIT_BBOX = {minX:-20, maxX:20, minY:-12, maxY:12}, MAXCELL_EDIT = 18, N = 50000;
+    let seeds = new Set(), mode = "edit";
+    function editLayout(){ const {w,h} = dims(canvas, RATIO); return layout(w, h, EDIT_BBOX, MAXCELL_EDIT); }
+    function drawEdit(){
+      const {ctx, w, h} = fitCanvas(canvas, RATIO); ctx.clearRect(0,0,w,h);
+      const L = layout(w, h, EDIT_BBOX, MAXCELL_EDIT);
+      // faint grid dots so it reads as paintable
+      ctx.fillStyle = cssv("--c-line"); ctx.globalAlpha = 0.5;
+      for (let x = EDIT_BBOX.minX; x <= EDIT_BBOX.maxX; x++) for (let y = EDIT_BBOX.minY; y <= EDIT_BBOX.maxY; y++){
+        const [px,py] = L.toPx(x+0.5, y+0.5); ctx.fillRect(px-0.5, py-0.5, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = cssv("--c-ink"); const sq = Math.ceil(L.cell);
+      for (const k of seeds){ const i = k.indexOf(","), x = +k.slice(0,i), y = +k.slice(i+1); const [px,py] = L.toPx(x,y); ctx.fillRect(Math.floor(px),Math.floor(py),sq,sq); }
+      // start marker at origin (ant faces up)
+      const a = new Ant(); a.x = 0; a.y = 0; a.dir = 0; drawAnt(ctx, L, a);
+      mode = "edit";
+    }
+    redraws.push(() => { if (mode === "edit") drawEdit(); else if (canvas._result) canvas._result(); });
+    function toggle(x,y){ const k = x+","+y; if (seeds.has(k)) seeds.delete(k); else seeds.add(k); }
+    canvas.addEventListener("click", e => {
+      const r = canvas.getBoundingClientRect();
+      const px = e.clientX - r.left - canvas.clientLeft, py = e.clientY - r.top - canvas.clientTop;
+      const L = editLayout(); const [x,y] = L.fromPx(px, py);
+      toggle(x,y); drawEdit();
+      $("cVerdict").innerHTML = ""; $("cLive").textContent = seeds.size + " seed cell(s) painted.";
+    });
+    $("cClear").addEventListener("click", () => { seeds = new Set(); drawEdit(); $("cVerdict").innerHTML = ""; $("cLive").textContent = "Cleared."; });
+    $("cRandom").addEventListener("click", () => {
+      seeds = new Set();
+      const k = 18 + Math.floor(Math.random()*12);
+      for (let i = 0; i < k; i++){ const x = Math.floor(Math.random()*13)-6, y = Math.floor(Math.random()*13)-6; seeds.add(x+","+y); }
+      drawEdit(); $("cVerdict").innerHTML = ""; $("cLive").textContent = "Randomized " + seeds.size + " seed cells.";
+    });
+    $("cRun").addEventListener("click", () => {
+      const ant = new Ant();
+      for (const key of seeds){ const i = key.indexOf(","), x = +key.slice(0,i), y = +key.slice(i+1); ant.setCell(x, y, 1); }
+      const pos = [[ant.x, ant.y]], head = [ant.dir];
+      for (let i = 0; i < N; i++){ ant.step(); pos.push([ant.x, ant.y]); head.push(ant.dir); }
+      const P = minimalPeriod(pos, head, N, 200, 1000);
+      let msg, ok = false;
+      if (P !== null){
+        const dx = pos[N][0] - pos[N-P][0], dy = pos[N][1] - pos[N-P][1], m2 = dx*dx + dy*dy;
+        ok = true;
+        msg = "highway found — period " + P + ", drift² = " + m2 +
+          ((P === 104 && m2 === 8) ? " (the same highway as the blank grid)" : "");
+      } else {
+        msg = "no highway within " + group(N) + " steps — which proves nothing either way (the question is open)";
+      }
+      $("cVerdict").innerHTML = "<span class=\"" + (ok ? "cl-ok" : "cl-bad") + "\"></span>" + msg;
+      $("cLive").textContent = msg;
+      const view = antBbox(ant); view.minX-=1; view.maxX+=1; view.minY-=1; view.maxY+=1;
+      canvas._result = () => drawAntGrid(canvas, RATIO, ant, view, 14);
+      mode = "result"; canvas._result();
+    });
+    drawEdit();
+  })();
+
+  /* ---------------- Widget D: reversibility (build then un-build) ---------------- */
+  (function widgetD(){
+    const canvas = $("dCanvas");
+    if (!canvas) return;
+    const RATIO = 0.56, MAXCELL = 20;
+    let ant = new Ant(), view = null, rafId = null;
+    const curN = () => +$("dN").value;
+    function draw(){ view = grow(view, antBbox(ant)); drawAntGrid(canvas, RATIO, ant, view, MAXCELL); $("dBlack").textContent = group(ant.black); }
+    redraws.push(draw);
+    function stop(){ if (rafId) cancelAnimationFrame(rafId); rafId = null; }
+    function setPhase(t){ $("dPhase").textContent = t; }
+    function build(){
+      stop(); ant = new Ant(); view = null; $("dErr").textContent = "—";
+      const N = curN();
+      if (reduceMotion){ for (let i = 0; i < N; i++) ant.step(); draw(); setPhase("built"); $("dLive").textContent = "Built " + group(N) + " steps."; return; }
+      let i = 0; const inc = Math.max(1, Math.round(N/120)); setPhase("building →");
+      (function tick(){ for (let k = 0; k < inc && i < N; k++){ ant.step(); i++; } draw(); if (i < N){ rafId = requestAnimationFrame(tick); } else { setPhase("built"); $("dLive").textContent = "Built " + group(N) + " steps."; } })();
+    }
+    function reverse(){
+      stop(); const N = ant.stepCount;
+      if (N === 0){ $("dLive").textContent = "Nothing to reverse — build first."; return; }
+      function finish(){
+        const home = ant.black === 0 && ant.x === 0 && ant.y === 0 && ant.dir === 0;
+        $("dErr").textContent = group(ant.black) + (ant.black === 1 ? " cell" : " cells");
+        setPhase(home ? "reversed — home" : "reversed");
+        $("dLive").textContent = "Reversed to the start; round-trip error " + group(ant.black) + " cells.";
+      }
+      if (reduceMotion){ for (let i = 0; i < N; i++) ant.invStep(); draw(); finish(); return; }
+      let i = 0; const inc = Math.max(1, Math.round(N/120)); setPhase("← un-building");
+      (function tick(){ for (let k = 0; k < inc && i < N; k++){ ant.invStep(); i++; } draw(); if (i < N){ rafId = requestAnimationFrame(tick); } else { finish(); } })();
+    }
+    $("dN").addEventListener("input", () => { $("dNOut").textContent = group(curN()); });
+    $("dFwd").addEventListener("click", build);
+    $("dBack").addEventListener("click", reverse);
+    $("dReset").addEventListener("click", () => { stop(); ant = new Ant(); view = null; $("dErr").textContent = "—"; setPhase("idle"); draw(); $("dLive").textContent = "Reset."; });
+    $("dNOut").textContent = group(curN());
+    draw();
+  })();
+
+  /* ---------------- Widget E: turmite rule-string explorer ---------------- */
+  (function widgetE(){
+    const canvas = $("eCanvas");
+    if (!canvas) return;
+    const RATIO = 0.62;
+    // is the rule (cyclically) made only of LL / RR pairs? -> proven to recur to symmetry.
+    function llrrFamily(rule){
+      if (rule.length < 2 || rule.length % 2 !== 0) return false;
+      for (let r = 0; r < rule.length; r++){
+        const s = rule.slice(r) + rule.slice(0, r);
+        let ok = true;
+        for (let i = 0; i < s.length; i += 2) if (s[i] !== s[i+1]){ ok = false; break; }
+        if (ok) return true;
+      }
+      return false;
+    }
+    function tagFor(rule, field){
+      const sym = reflectionSymmetry(field);
+      const symNote = sym ? " · symmetric at this step ✓ (axis " + sym + ")" : "";
+      if (rule === "RL" || rule === "LR")
+        return {cls:"cl-tag cl-tag--proven", txt:(rule === "RL" ? "= Langton’s ant — builds the period-104 highway" : "= Langton’s ant (mirror image) — builds the period-104 highway"), v:"cl-ok", note:symNote};
+      if (llrrFamily(rule))
+        return {cls:"cl-tag cl-tag--cited", txt:"proven to return to bilateral symmetry infinitely often (Gale et al. 1995)", v:"cl-ok", note:symNote};
+      if (rule === "RLR")
+        return {cls:"cl-tag cl-tag--open", txt:"grows chaotically; no highway known — open / empirical", v:"", note:symNote};
+      if (rule === "LRRRRRLLR")
+        return {cls:"cl-tag cl-tag--empirical", txt:"fills a square region around itself — empirical", v:"", note:symNote};
+      return {cls:"cl-tag cl-tag--empirical", txt:"behaviour not classified here — empirical observation", v:"", note:symNote};
+    }
+    function run(rule, steps){
+      rule = String(rule).toUpperCase().replace(/[^LR]/g, "");
+      if (rule.length === 0){ $("eTag").innerHTML = "<span class=\"cl-bad\"></span>enter a rule using only the letters L and R"; return; }
+      $("eRule").value = rule;
+      let t;
+      try { t = new Turmite(rule); } catch(err){ $("eTag").innerHTML = "<span class=\"cl-bad\"></span>invalid rule"; return; }
+      for (let i = 0; i < steps; i++) t.step();
+      const field = t.colorField();
+      // bbox
+      let a=Infinity,b=-Infinity,c=Infinity,d=-Infinity;
+      for (const k of field.keys()){ const i=k.indexOf(","), x=+k.slice(0,i), y=+k.slice(i+1); if(x<a)a=x; if(x>b)b=x; if(y<c)c=y; if(y>d)d=y; }
+      if (!isFinite(a)){ a=b=c=d=0; }
+      const bbox = {minX:a-1, maxX:b+1, minY:c-1, maxY:d+1};
+      function render(){
+        const {ctx, w, h} = fitCanvas(canvas, RATIO); ctx.clearRect(0,0,w,h);
+        const L = layout(w, h, bbox, 16); const sq = Math.ceil(L.cell);
+        for (const [k,ci] of field){ const i=k.indexOf(","), x=+k.slice(0,i), y=+k.slice(i+1);
+          ctx.fillStyle = TURMITE_PAL[ci] || cssv("--c-ink"); const [px,py] = L.toPx(x,y); ctx.fillRect(Math.floor(px),Math.floor(py),sq,sq); }
+      }
+      canvas._drawn = render; render();
+      const tg = tagFor(rule, field);
+      $("eRuleOut").textContent = rule;
+      $("eColours").textContent = rule.length;
+      $("eCells").textContent = group(field.size);
+      $("eTag").innerHTML = "<span class=\"" + tg.v + "\"></span><span class=\"" + tg.cls + "\">turmite</span> " + tg.txt + tg.note;
+      $("eLive").textContent = "Rule " + rule + " after " + group(steps) + " steps: " + group(field.size) + " coloured cells.";
+    }
+    redraws.push(() => { if (canvas._drawn) canvas._drawn(); });
+    $("ePresets").addEventListener("click", e => {
+      const b = e.target.closest("button[data-rule]"); if (!b) return;
+      segOn($("ePresets"), b); run(b.dataset.rule, +b.dataset.steps);
+    });
+    $("eGo").addEventListener("click", () => { segOn($("ePresets"), document.createElement("button")); run($("eRule").value, 30000); });
+    $("eRule").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("eGo").click(); } });
+    run("RL", 12000);
+  })();
+
+  /* ---- redraw every canvas on resize (debounced) ---- */
+  let rt = null;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { for (const f of redraws) try { f(); } catch(e){} }, 160); });
+})();
+</script>
+</body>
+</html>

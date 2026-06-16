@@ -32,6 +32,7 @@ and from a tiny, readable code repo.
 | 03 | **The Hat: one shape that never repeats** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/monotile/) | ✅ shipped & verified |
 | 04 | **Benford's Law: why the digit 1 is not fair** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/benford/) | ✅ shipped & verified |
 | 05 | **The 3n+1 problem: a rule too simple to solve** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/collatz/) | ✅ shipped & verified |
+| 06 | **Langton's ant: emergent order from two rules** | [open →](https://rtmodb-rgb.github.io/curiosity-lab/langtons-ant/) | ✅ shipped & verified |
 
 ### #01 — The Abelian Sandpile
 One kindergarten rule about falling sand hides an algebraic group, a fractal "zero," and a number you can
@@ -92,6 +93,23 @@ conjecture itself stays **open**; Terras density-1, Tao (2022), Krasikov–Lagar
 a Node cross-check `test_core.mjs` = **23 checks**, including a guard that the page inlines the tested engine
 byte-for-byte).
 
+### #06 — Langton's ant: emergent order from two rules
+A single "ant" walks a grid under two rules: on a white cell turn right, flip it black, step; on a black cell
+turn left, flip it white, step. From an all-white grid it stays near-symmetric for a few hundred steps, wanders
+through **~10,000** steps of apparent chaos, then — with no special trigger — locks into a **"highway"**: a
+period-**104** cycle that lays **+12** black cells and drifts diagonally by **(±2, ±2)** (Euclidean
+**2√2 ≈ 2.828**) every period, marching off to infinity. The page proves-by-code the things that *don't* depend
+on drawing convention — the minimal period is **104** (P = 52 fails), the drift magnitude is **2√2**, **+12**
+cells per period, and the update is exactly **reversible** — while staying scrupulous about what is only
+**cited** (Bunimovich–Troubetzkoy 1992: the trajectory is unbounded for *any* finite start — which is **not** the
+same as proving the highway must form), what is genuinely **open** (must the highway *always* appear?), and what
+is merely **empirical** (the all-white onset near step **9,977**). It also lets you play multi-colour "turmites"
+(the L/R rule-strings), including a proven **LL/RR** symmetry family, and is careful to scope universality to
+*infinite*, finitely-described configurations — for genuinely finite starts the proven statement is
+**P-hardness**, not Turing-completeness. Everything we compute is checked two ways: a stdlib `verify.py` =
+**30 checks** and a Node cross-check `test_core.mjs` = **19 checks**, including a guard that the page inlines the
+tested engine byte-for-byte.
+
 ## Reproduce every number yourself
 
 ```bash
@@ -147,6 +165,18 @@ python3 code/collatz/verify.py        # -> 31 checks passed
 cp docs/collatz/index.html code/collatz/index.html
 node code/collatz/test_core.mjs       # -> 23 passed, 0 failed
 rm code/collatz/index.html
+
+# --- Lab #06 — Langton's ant ---
+# Python checks (STANDARD LIBRARY ONLY — no pip): minimal period 104 (P=52 fails), net drift
+# (±2,±2) => |2√2|, +12 cells/period, onset ~9977 (~10^4), exact reversibility round-trip,
+# "RL" reproduces Langton, and LL/RR rule-strings are bilaterally symmetric infinitely often
+python3 code/langtons-ant/verify.py        # -> 30 checks passed
+
+# Run the EXACT JavaScript engine shipped on the page, in Node, vs. Python (step-by-step),
+# plus a guard that the page inlines that engine byte-for-byte (copy the page in first):
+cp docs/langtons-ant/index.html code/langtons-ant/index.html
+node code/langtons-ant/test_core.mjs       # -> 19 passed, 0 failed
+rm code/langtons-ant/index.html
 ```
 
 Exact sandpile-group orders for the n×n grid (= number of spanning trees = det of the reduced Laplacian),
@@ -176,6 +206,7 @@ docs/                      # the live site (GitHub Pages serves from here)
   benford/index.html       #   experiment #04
   benford/img/             #   computed hero figures
   collatz/index.html       #   experiment #05 (canvas-only — every figure is rendered live)
+  langtons-ant/index.html  #   experiment #06 (canvas-only — every figure is rendered live)
 code/sandpile/
   sandpile.py              # core model: stabilise, identity, recurrent test, exact determinant
   verify.py                # one-command reproduction of every headline claim
@@ -213,6 +244,16 @@ code/collatz/
   verify.py                # 31 checks — Python STANDARD LIBRARY ONLY (records cross-checked vs OEIS)
   core.js                  # dependency-free JS engine (byte-identical to the page's inlined copy)
   test_core.mjs            # 23 checks: runs the page's own JS engine under Node, vs. Python, + byte-identity guard
+  figures.py               # regenerates supplementary figures (the live page renders its own)
+  facts.md                 # sourced facts, caveats and references
+  facts.json               # exact display-number snapshot used by the page
+  img/                     # supplementary computed figures (not embedded — the page is canvas-only)
+code/langtons-ant/
+  langton.py               # core engine: ant/turmite simulation, highway detection, reversibility
+  verify.py                # 30 checks — Python STANDARD LIBRARY ONLY (period/drift/cells/onset/reversibility)
+  core.js                  # dependency-free JS engine (byte-identical to the page's inlined copy)
+  test_core.mjs            # 19 checks: runs the page's own JS engine under Node, vs. Python, + byte-identity guard
+  dom_smoke.cjs            # headless smoke test of the page's interactive widgets
   figures.py               # regenerates supplementary figures (the live page renders its own)
   facts.md                 # sourced facts, caveats and references
   facts.json               # exact display-number snapshot used by the page
